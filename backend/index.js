@@ -12,6 +12,10 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
+app.get('/', (req, res) => {
+  res.send('Nineteen06 POS API is running...');
+});
+
 // --- Products Routes ---
 app.get('/api/products', async (req, res) => {
   try {
