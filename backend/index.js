@@ -18,6 +18,7 @@ app.get('/api/products', async (req, res) => {
     const products = await prisma.product.findMany();
     res.json(products);
   } catch (error) {
+    console.error("GET Products Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -27,6 +28,7 @@ app.post('/api/products', async (req, res) => {
     const product = await prisma.product.create({ data: req.body });
     res.status(201).json(product);
   } catch (error) {
+    console.error("POST Products Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -40,6 +42,7 @@ app.put('/api/products/:id', async (req, res) => {
     });
     res.json(product);
   } catch (error) {
+    console.error("PUT Products Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -50,6 +53,7 @@ app.delete('/api/products/:id', async (req, res) => {
     await prisma.product.delete({ where: { id: parseInt(id) } });
     res.status(204).send();
   } catch (error) {
+    console.error("DELETE Products Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -63,6 +67,7 @@ app.get('/api/orders', async (req, res) => {
     });
     res.json(orders);
   } catch (error) {
+    console.error("GET Orders Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -195,6 +200,7 @@ app.get('/api/analytics/dashboard', async (req, res) => {
       predictions
     });
   } catch (error) {
+    console.error("API Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
