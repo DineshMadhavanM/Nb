@@ -14,8 +14,8 @@ function ProductModal({ product, onSave, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.name || !form.price || !form.stock) { toast.error('Please fill all required fields'); return }
-    onSave({ ...form, price: Number(form.price), stock: Number(form.stock) })
+    if (!form.name || !form.price) { toast.error('Please fill all required fields'); return }
+    onSave({ ...form, price: Number(form.price), stock: Number(form.stock || 0) })
     onClose()
     toast.success(product ? 'Product updated!' : 'Product added!')
   }
@@ -52,8 +52,8 @@ function ProductModal({ product, onSave, onClose }) {
               <input className="input-dark" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0" required />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stock *</label>
-              <input className="input-dark" type="number" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="0" required />
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stock</label>
+              <input className="input-dark" type="number" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="0" />
             </div>
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</label>
@@ -113,8 +113,6 @@ export default function Stock() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, marginBottom: 22 }}>
         {[
           { label: 'Total Products', value: products.length, color: 'var(--accent-gold)' },
-          { label: 'Low Stock Alerts', value: lowStock, color: '#f87171' },
-          { label: 'Inventory Value', value: `₹${totalValue.toLocaleString()}`, color: 'var(--accent-light)' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ background: 'var(--card-bg)', borderRadius: 12, padding: '16px 18px', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-main)' }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>{label}</div>
@@ -123,12 +121,6 @@ export default function Stock() {
         ))}
       </div>
 
-      {lowStock > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 10, padding: '10px 16px', marginBottom: 18 }}>
-          <AlertTriangle size={16} color="#fbbf24" />
-          <span style={{ fontSize: 13, color: '#fbbf24' }}>{lowStock} product{lowStock > 1 ? 's' : ''} running low on stock</span>
-        </div>
-      )}
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
