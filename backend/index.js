@@ -41,7 +41,7 @@ app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const product = await prisma.product.update({
-      where: { id: parseInt(id) },
+      where: { id },
       data: req.body
     });
     res.json(product);
@@ -54,7 +54,7 @@ app.put('/api/products/:id', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.product.delete({ where: { id: parseInt(id) } });
+    await prisma.product.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
     console.error("DELETE Products Error:", error);
@@ -84,7 +84,7 @@ app.post('/api/orders', async (req, res) => {
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
-          id: `ORD-${Date.now()}`,
+          customId: `ORD-${Date.now()}`,
           customerId,
           customerName,
           subtotal,
