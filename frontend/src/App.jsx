@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AppProvider } from './context/AppContext'
 import { CartProvider } from './context/CartContext'
@@ -17,7 +17,7 @@ export default function App() {
   return (
     <AppProvider>
       <CartProvider>
-        <BrowserRouter>
+        <HashRouter>
           <Toaster
             position="top-right"
             toastOptions={{
@@ -43,7 +43,7 @@ export default function App() {
               <Route path="/reports" element={<Reports />} />
             </Route>
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </CartProvider>
     </AppProvider>
   )
