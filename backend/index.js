@@ -40,9 +40,10 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { id: _, createdAt, updatedAt, ...updateData } = req.body;
     const product = await prisma.product.update({
       where: { id },
-      data: req.body
+      data: updateData
     });
     res.json(product);
   } catch (error) {
