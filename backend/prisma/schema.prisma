@@ -15,6 +15,7 @@ model Product {
   stock       Int
   unit        String
   description String?
+  gstRate     Float?   @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   OrderItems  OrderItem[]
@@ -38,6 +39,7 @@ model Order {
   customerId    String?     @db.ObjectId
   customerName  String
   subtotal      Float
+  gst           Float?      @default(0)
   discount      Float       @default(0)
   total         Float
   paymentMethod String
@@ -56,6 +58,7 @@ model OrderItem {
   name      String
   price     Float
   qty       Int
+  gstRate   Float?  @default(0)
   Order     Order   @relation(fields: [orderId], references: [id])
   Product   Product @relation(fields: [productId], references: [id])
 }

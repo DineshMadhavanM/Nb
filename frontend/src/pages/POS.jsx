@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 const CATEGORIES = ['All', 'Brownie', 'Tres Leches', 'Cookies', 'Muffins', 'Jar Cake', 'Panna Cotta', 'Mousse', 'Beverages', 'Mojito', 'Snacks']
 
 function CheckoutModal({ onClose }) {
-  const { cart, selectedCustomer, getSubtotal, getTotal, discount, setDiscount, clearCart, setSelectedCustomer } = useCart()
+  const { cart, selectedCustomer, getSubtotal, getGST, getTotal, discount, setDiscount, clearCart, setSelectedCustomer } = useCart()
   const { addOrder, customers } = useApp()
   const [payMethod, setPayMethod] = useState('UPI')
   const [step, setStep] = useState('review') // review | success
@@ -22,8 +22,15 @@ function CheckoutModal({ onClose }) {
     const order = {
       customerId: selectedCustomer?.id || null,
       customerName: selectedCustomer?.name || 'Walk-in Customer',
-      items: cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, qty: i.qty })),
+      items: cart.map(i => ({ 
+        productId: i.productId, 
+        name: i.name, 
+        price: i.price, 
+        qty: i.qty,
+        gstRate: i.gstRate || 0
+      })),
       subtotal: getSubtotal(),
+      gst: getGST(),
       discount,
       total: getTotal(),
       paymentMethod: payMethod,
@@ -93,6 +100,9 @@ function CheckoutModal({ onClose }) {
             {discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#8CB874', marginBottom: 4 }}>
               <span>Discount ({discount}%)</span><span>-₹{(getSubtotal() * discount / 100).toFixed(2)}</span>
             </div>}
+            {getGST() > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--accent-gold)', marginBottom: 4 }}>
+              <span>GST</span><span>+₹{getGST().toFixed(2)}</span>
+            </div>}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 16, color: 'var(--text-main)', marginTop: 6 }}>
               <span>Total</span><span style={{ color: 'var(--accent-light)' }}>₹{getTotal().toFixed(2)}</span>
             </div>
@@ -132,7 +142,7 @@ function CheckoutModal({ onClose }) {
 
 export default function POS() {
   const { products } = useApp()
-  const { cart, addToCart, removeFromCart, updateQty, getSubtotal, getTotal, getItemCount } = useCart()
+  const { cart, addToCart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount } = useCart()
   const [category, setCategory] = useState('All')
   const [search, setSearch] = useState('')
   const [checkout, setCheckout] = useState(false)
@@ -310,9 +320,12 @@ function CartContent({ cart, removeFromCart, updateQty, getSubtotal, getTotal, g
 
       {cart.length > 0 && (
         <div style={{ padding: '20px', borderTop: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>
             <span>Subtotal</span><span>₹{getSubtotal().toFixed(2)}</span>
           </div>
+          {getGST() > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--accent-gold)', marginBottom: 12 }}>
+            <span>GST</span><span>₹{getGST().toFixed(2)}</span>
+          </div>}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 19, fontWeight: 800, color: 'var(--text-main)', marginBottom: 20 }}>
             <span>Total Amount</span><span style={{ color: 'var(--accent-light)', fontFamily: 'Playfair Display' }}>₹{getTotal().toFixed(2)}</span>
           </div>

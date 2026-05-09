@@ -14,7 +14,13 @@ export function CartProvider({ children }) {
       if (existing) {
         return prev.map(i => i.productId === product.id ? { ...i, qty: i.qty + 1 } : i)
       }
-      return [...prev, { productId: product.id, name: product.name, price: product.price, qty: 1 }]
+      return [...prev, { 
+        productId: product.id, 
+        name: product.name, 
+        price: product.price, 
+        qty: 1, 
+        gstRate: product.gstRate || 0 
+      }]
     })
   }
 
@@ -36,10 +42,13 @@ export function CartProvider({ children }) {
 
   const getSubtotal = () => cart.reduce((sum, i) => sum + i.price * i.qty, 0)
 
+  const getGST = () => cart.reduce((sum, i) => sum + (i.price * i.qty * (i.gstRate || 0)) / 100, 0)
+  
   const getTotal = () => {
     const sub = getSubtotal()
     const discAmt = (sub * discount) / 100
-    return sub - discAmt
+    const gstAmt = getGST()
+    return sub - discAmt + gstAmt
   }
 
   const getItemCount = () => cart.reduce((sum, i) => sum + i.qty, 0)
@@ -49,7 +58,7 @@ export function CartProvider({ children }) {
       cart, selectedCustomer, discount, note,
       setSelectedCustomer, setDiscount, setNote,
       addToCart, removeFromCart, updateQty, clearCart,
-      getSubtotal, getTotal, getItemCount
+      getSubtotal, getGST, getTotal, getItemCount
     }}>
       {children}
     </CartContext.Provider>

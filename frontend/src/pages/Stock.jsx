@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 const CATEGORIES = ['Brownie', 'Tres Leches', 'Cookies', 'Muffins', 'Jar Cake', 'Panna Cotta', 'Mousse', 'Beverages', 'Mojito', 'Snacks']
 
-const emptyForm = { name: '', category: 'Brownie', price: '', stock: '', unit: 'pcs', description: '' }
+const emptyForm = { name: '', category: 'Brownie', price: '', stock: '', unit: 'pcs', description: '', gstRate: 0 }
 
 function ProductModal({ product, onSave, onClose }) {
   const [form, setForm] = useState(product || emptyForm)
@@ -15,7 +15,12 @@ function ProductModal({ product, onSave, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!form.name || !form.price) { toast.error('Please fill all required fields'); return }
-    onSave({ ...form, price: Number(form.price), stock: Number(form.stock || 0) })
+    onSave({ 
+      ...form, 
+      price: Number(form.price), 
+      stock: Number(form.stock || 0),
+      gstRate: Number(form.gstRate || 0)
+    })
     onClose()
     toast.success(product ? 'Product updated!' : 'Product added!')
   }
@@ -33,7 +38,7 @@ function ProductModal({ product, onSave, onClose }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Name *</label>
-              <input className="input-dark" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Product name" required />
+              <input className="input-dark" value={form.name || ''} onChange={e => set('name', e.target.value)} placeholder="Product name" required />
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Category</label>
@@ -49,15 +54,19 @@ function ProductModal({ product, onSave, onClose }) {
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Price (₹) *</label>
-              <input className="input-dark" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0" required />
+              <input className="input-dark" type="number" value={form.price || ''} onChange={e => set('price', e.target.value)} placeholder="0" required />
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stock</label>
-              <input className="input-dark" type="number" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="0" />
+              <input className="input-dark" type="number" value={form.stock || ''} onChange={e => set('stock', e.target.value)} placeholder="0" />
             </div>
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</label>
-              <input className="input-dark" value={form.description} onChange={e => set('description', e.target.value)} placeholder="Short description" />
+              <input className="input-dark" value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="Short description" />
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>GST Rate (%)</label>
+              <input className="input-dark" type="number" value={form.gstRate || ''} onChange={e => set('gstRate', e.target.value)} placeholder="0" />
             </div>
           </div>
 

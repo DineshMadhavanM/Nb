@@ -78,7 +78,7 @@ app.get('/api/orders', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customerId, customerName, items, subtotal, discount, total, paymentMethod } = req.body;
+    const { customerId, customerName, items, subtotal, gst, discount, total, paymentMethod } = req.body;
     
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -88,6 +88,7 @@ app.post('/api/orders', async (req, res) => {
           customerId,
           customerName,
           subtotal,
+          gst,
           discount,
           total,
           paymentMethod,
@@ -96,7 +97,8 @@ app.post('/api/orders', async (req, res) => {
               productId: item.productId,
               name: item.name,
               price: item.price,
-              qty: item.qty
+              qty: item.qty,
+              gstRate: item.gstRate || 0
             }))
           }
         }
