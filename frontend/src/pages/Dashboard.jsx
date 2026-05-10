@@ -54,7 +54,7 @@ function StatCard({ icon: Icon, label, value, change, color, delay }) {
 }
 
 export default function Dashboard() {
-  const { orders, getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST, analytics, deleteOrder } = useApp()
+  const { orders, getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST, analytics, deleteOrder, updatePaymentStatus } = useApp()
   const [chartMode, setChartMode] = useState('weekly')
 
   const chartData = useMemo(() => {
@@ -64,7 +64,7 @@ export default function Dashboard() {
         const dayOrders = orders.filter(o => isSameDay(new Date(o.createdAt), day) && o.status !== 'cancelled')
         return {
           day: format(day, 'EEE'),
-          revenue: dayOrders.reduce((sum, o) => sum + o.total, 0)
+          revenue: dayOrders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0)
         }
       })
     } else {
@@ -74,7 +74,7 @@ export default function Dashboard() {
         const monthOrders = orders.filter(o => format(new Date(o.createdAt), 'MMM yyyy') === format(date, 'MMM yyyy') && o.status !== 'cancelled')
         data.push({
           month: format(date, 'MMM'),
-          revenue: monthOrders.reduce((sum, o) => sum + o.total, 0)
+          revenue: monthOrders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0)
         })
       }
       return data
@@ -174,25 +174,38 @@ export default function Dashboard() {
           <table className="table-dark">
             <thead>
               <tr>
-                <th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Time</th><th>Action</th>
+                <th>Order ID</th><th>Customer</th><th>Total</th><th>Method</th><th>Due Date</th><th>Payment</th><th>Status</th><th>Action</th>
               </tr>
             </thead>
             <tbody>
               {recentOrders.map(o => (
                 <tr key={o.id}>
-                  <td style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>{o.id}</td>
+                  <td style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>{o.id.slice(-6).toUpperCase()}</td>
                   <td>{o.customerName}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{o.items.length} item{o.items.length > 1 ? 's' : ''}</td>
                   <td style={{ fontWeight: 600 }}>₹{o.total.toFixed(0)}</td>
-                  <td><span className="badge-gold">{o.paymentMethod}</span></td>
-                  <td><span className="badge" style={{ background: `${statusColor[o.status]}18`, color: statusColor[o.status], border: `1px solid ${statusColor[o.status]}30` }}>{o.status}</span></td>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{format(new Date(o.createdAt), 'hh:mm a')}</td>
+                  <td><span className="badge-gold" style={{ fontSize: 10 }}>{o.paymentMethod}</span></td>
+                  <td style={{ color: o.paymentMethod === 'Credit' ? '#f87171' : 'var(--text-muted)', fontSize: 12 }}>
+                    {o.dueDate ? format(new Date(o.dueDate), 'MMM d') : '-'}
+                  </td>
                   <td>
+                    {o.paymentStatus === 'paid' ? (
+                      <span className="badge-success" style={{ fontSize: 10 }}>Received</span>
+                    ) : (
+                      <button 
+                        onClick={() => window.confirm('Mark this credit as received?') && updatePaymentStatus(o.id, 'paid')}
+                        className="badge-warning" style={{ fontSize: 10, cursor: 'pointer', border: '1px solid #fbbf24' }}
+                      >
+                        Pending
+                      </button>
+                    )}
+                  </td>
+                  <td><span className="badge" style={{ background: `${statusColor[o.status]}18`, color: statusColor[o.status], border: `1px solid ${statusColor[o.status]}30`, fontSize: 10 }}>{o.status}</span></td>
+                  <td style={{ display: 'flex', gap: 8 }}>
                     <button 
                       onClick={(e) => { e.stopPropagation(); window.confirm('Are you sure you want to delete this order? All stock will be restored.') && deleteOrder(o.id) }}
                       style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 4, opacity: 0.7 }}
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                     </button>
                   </td>
                 </tr>

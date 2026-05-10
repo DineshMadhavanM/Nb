@@ -81,7 +81,7 @@ app.post('/api/orders', async (req, res) => {
   try {
     const { customerId, customerName, items, subtotal, gst, discount, total, paymentMethod, dueDate } = req.body;
     
-    const orderStatus = paymentMethod === 'Credit' ? 'unpaid' : 'paid';
+    const payStatus = paymentMethod === 'Credit' ? 'unpaid' : 'paid';
 
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -96,7 +96,8 @@ app.post('/api/orders', async (req, res) => {
           total,
           paymentMethod,
           dueDate: dueDate ? new Date(dueDate) : null,
-          status: orderStatus,
+          paymentStatus: payStatus,
+          status: 'pending',
           items: {
             create: items.map(item => ({
               productId: item.productId,
@@ -152,6 +153,20 @@ app.patch('/api/orders/:id/status', async (req, res) => {
     const order = await prisma.order.update({
       where: { id },
       data: { status }
+    });
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch('/api/orders/:id/payment', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentStatus } = req.body;
+    const order = await prisma.order.update({
+      where: { id },
+      data: { paymentStatus }
     });
     res.json(order);
   } catch (error) {
@@ -241,7 +256,9 @@ app.get('/api/analytics/dashboard', async (req, res) => {
       where: { createdAt: { gte: today } }
     });
 
-    const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
+    const todayRevenue = todayOrders
+      .filter(o => o.paymentStatus === 'paid')
+      .reduce((sum, o) => sum + o.total, 0);
     const totalOrdersCount = await prisma.order.count();
     
     // Simplified AI Sales Prediction (Mocked logic for demo)

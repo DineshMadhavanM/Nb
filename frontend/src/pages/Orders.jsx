@@ -9,7 +9,7 @@ const STATUS_OPTIONS = ['pending', 'preparing', 'ready', 'delivered', 'cancelled
   const statusColor = { pending: '#fbbf24', preparing: '#60a5fa', ready: '#8CB874', delivered: '#4ade80', cancelled: '#f87171' }
 
 export default function Orders() {
-  const { orders, updateOrderStatus, deleteOrder } = useApp()
+  const { orders, updateOrderStatus, updatePaymentStatus, deleteOrder } = useApp()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selected, setSelected] = useState(null)
@@ -64,22 +64,35 @@ export default function Orders() {
           <div style={{ overflowX: 'auto' }}>
             <table className="table-dark">
               <thead>
-                <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+                <tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Method</th><th>Due Date</th><th>Payment</th><th>Status</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {filtered.map(o => (
                   <tr key={o.id} onClick={() => setSelected(selected?.id === o.id ? null : o)} style={{ cursor: 'pointer', background: selected?.id === o.id ? 'rgba(140,184,116,0.06)' : 'transparent' }}>
-                    <td style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>{o.id}</td>
+                    <td style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>{o.id.slice(-6).toUpperCase()}</td>
                     <td style={{ fontWeight: 500 }}>{o.customerName}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{o.items.length} item{o.items.length > 1 ? 's' : ''}</td>
                     <td style={{ fontWeight: 600 }}>₹{o.total.toFixed(0)}</td>
                     <td><span className="badge-gold">{o.paymentMethod}</span></td>
+                    <td style={{ color: o.paymentMethod === 'Credit' ? '#f87171' : 'var(--text-muted)', fontSize: 12 }}>
+                      {o.dueDate ? format(new Date(o.dueDate), 'MMM d') : '-'}
+                    </td>
+                    <td>
+                      {o.paymentStatus === 'paid' ? (
+                        <span className="badge-success">Received</span>
+                      ) : (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); window.confirm('Mark this credit as received?') && updatePaymentStatus(o.id, 'paid') }}
+                          className="badge-warning" style={{ cursor: 'pointer' }}
+                        >
+                          Pending
+                        </button>
+                      )}
+                    </td>
                     <td>
                       <span className="badge" style={{ background: `${statusColor[o.status]}15`, color: statusColor[o.status], border: `1px solid ${statusColor[o.status]}25` }}>
                         {o.status}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{format(new Date(o.createdAt), 'MMM d, hh:mm a')}</td>
                     <td onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <select value={o.status} onChange={e => handleStatus(o.id, e.target.value)}
                         style={{ background: 'var(--input-bg)', border: '1px solid var(--glass-border)', color: 'var(--accent-gold)', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', outline: 'none' }}>

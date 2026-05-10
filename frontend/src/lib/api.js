@@ -17,6 +17,7 @@ export const orderApi = {
   getAll: () => api.get('/orders'),
   create: (data) => api.post('/orders', data),
   updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
+  updatePayment: (id, paymentStatus) => api.patch(`/orders/${id}/payment`, { paymentStatus }),
   delete: (id) => api.delete(`/orders/${id}`),
 };
 

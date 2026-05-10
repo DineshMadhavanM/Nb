@@ -101,6 +101,19 @@ export function AppProvider({ children }) {
     }
   }
 
+  const updatePaymentStatus = async (id, paymentStatus) => {
+    try {
+      const res = await orderApi.updatePayment(id, paymentStatus)
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, paymentStatus: res.data.paymentStatus } : o))
+      if (paymentStatus === 'paid') {
+        toast.success('Payment marked as Received')
+      }
+      fetchData() // Refresh analytics
+    } catch (error) {
+      toast.error('Failed to update payment status')
+    }
+  }
+
   const deleteOrder = async (id) => {
     try {
       await orderApi.delete(id)
@@ -126,14 +139,14 @@ export function AppProvider({ children }) {
   // Analytics Helpers
   const getTodayRevenue = () => analytics?.todayRevenue || 0
   const getTodayOrders = () => analytics?.todayOrders || 0
-  const getMonthlyRevenue = () => orders.reduce((sum, o) => sum + o.total, 0) // Simplified
-  const getTotalGST = () => orders.reduce((sum, o) => sum + (o.gst || 0), 0)
+  const getMonthlyRevenue = () => orders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0)
+  const getTotalGST = () => orders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + (o.gst || 0), 0)
 
   return (
     <AppContext.Provider value={{
       products, orders, customers, analytics, loading, theme, toggleTheme,
       addProduct, updateProduct, deleteProduct,
-      addOrder, updateOrderStatus, deleteOrder,
+      addOrder, updateOrderStatus, updatePaymentStatus, deleteOrder,
       addCustomer, fetchData,
       getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST
     }}>

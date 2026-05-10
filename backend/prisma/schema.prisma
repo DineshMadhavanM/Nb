@@ -44,6 +44,7 @@ model Order {
   total         Float
   paymentMethod String
   dueDate       DateTime?
+  paymentStatus String      @default("paid")
   status        String      @default("pending")
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
