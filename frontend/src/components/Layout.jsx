@@ -2,7 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './Sidebar'
 import { useState } from 'react'
-import { Menu, X, LayoutDashboard, ShoppingCart, ClipboardList, Package, User, MoreVertical, Sun, Moon } from 'lucide-react'
+import { Menu, X, LayoutDashboard, ShoppingCart, ClipboardList, Package, User, MoreVertical, Sun, Moon, Info } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function Layout() {
@@ -15,7 +15,7 @@ export default function Layout() {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
     { path: '/pos', icon: ShoppingCart, label: 'POS' },
     { path: '/orders', icon: ClipboardList, label: 'Orders' },
-    { path: '/stock', icon: Package, label: 'Stock' },
+    { path: '/about', icon: Info, label: 'About' },
   ]
 
   return (

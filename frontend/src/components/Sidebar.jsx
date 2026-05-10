@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingCart, FileText, Package,
-  Users, BarChart3, ClipboardList, X, Cookie, Sun, Moon
+  Users, BarChart3, ClipboardList, X, Cookie, Sun, Moon, Info
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useApp } from '../context/AppContext'
@@ -14,6 +14,7 @@ const navItems = [
   { path: '/stock', icon: Package, label: 'Stock' },
   { path: '/customers', icon: Users, label: 'Customers' },
   { path: '/reports', icon: BarChart3, label: 'Reports' },
+  { path: '/about', icon: Info, label: 'About Us' },
 ]
 
 export default function Sidebar({ onClose }) {
