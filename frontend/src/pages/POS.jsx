@@ -210,7 +210,7 @@ export default function POS() {
         <div className="desktop-cart" style={{ display: 'flex', flexDirection: 'column', background: 'var(--card-bg)', borderRadius: 20, border: '1px solid var(--glass-border)', overflow: 'hidden' }}>
           <CartContent 
             cart={cart} removeFromCart={removeFromCart} updateQty={updateQty} 
-            getSubtotal={getSubtotal} getTotal={getTotal} 
+            getSubtotal={getSubtotal} getGST={getGST} getTotal={getTotal} 
             getItemCount={getItemCount} onCheckout={() => setCheckout(true)} 
           />
         </div>
@@ -251,7 +251,7 @@ export default function POS() {
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 <CartContent 
                   cart={cart} removeFromCart={removeFromCart} updateQty={updateQty} 
-                  getSubtotal={getSubtotal} getTotal={getTotal} 
+                  getSubtotal={getSubtotal} getGST={getGST} getTotal={getTotal} 
                   getItemCount={getItemCount} onCheckout={() => { setShowMobileCart(false); setCheckout(true) }} 
                 />
               </div>
@@ -279,7 +279,7 @@ export default function POS() {
   )
 }
 
-function CartContent({ cart, removeFromCart, updateQty, getSubtotal, getTotal, getItemCount, onCheckout }) {
+function CartContent({ cart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount, onCheckout }) {
   return (
     <>
       <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: 8 }}>
