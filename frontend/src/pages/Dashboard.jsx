@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, ShoppingBag, Receipt, Users, ArrowUpRight, Zap } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Receipt, Users, ArrowUpRight, Zap, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { format, subDays, startOfMonth, eachDayOfInterval, isSameDay } from 'date-fns'
@@ -54,7 +54,7 @@ function StatCard({ icon: Icon, label, value, change, color, delay }) {
 }
 
 export default function Dashboard() {
-  const { orders, getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST, analytics } = useApp()
+  const { orders, getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST, analytics, deleteOrder } = useApp()
   const [chartMode, setChartMode] = useState('weekly')
 
   const chartData = useMemo(() => {
@@ -174,7 +174,7 @@ export default function Dashboard() {
           <table className="table-dark">
             <thead>
               <tr>
-                <th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Time</th>
+                <th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Time</th><th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -187,6 +187,14 @@ export default function Dashboard() {
                   <td><span className="badge-gold">{o.paymentMethod}</span></td>
                   <td><span className="badge" style={{ background: `${statusColor[o.status]}18`, color: statusColor[o.status], border: `1px solid ${statusColor[o.status]}30` }}>{o.status}</span></td>
                   <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{format(new Date(o.createdAt), 'hh:mm a')}</td>
+                  <td>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); window.confirm('Are you sure you want to delete this order? All stock will be restored.') && deleteOrder(o.id) }}
+                      style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 4, opacity: 0.7 }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

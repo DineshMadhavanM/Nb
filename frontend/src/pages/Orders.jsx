@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, ChevronDown } from 'lucide-react'
+import { Search, Filter, ChevronDown, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -9,7 +9,7 @@ const STATUS_OPTIONS = ['pending', 'preparing', 'ready', 'delivered', 'cancelled
   const statusColor = { pending: '#fbbf24', preparing: '#60a5fa', ready: '#8CB874', delivered: '#4ade80', cancelled: '#f87171' }
 
 export default function Orders() {
-  const { orders, updateOrderStatus } = useApp()
+  const { orders, updateOrderStatus, deleteOrder } = useApp()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selected, setSelected] = useState(null)
@@ -80,11 +80,17 @@ export default function Orders() {
                       </span>
                     </td>
                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{format(new Date(o.createdAt), 'MMM d, hh:mm a')}</td>
-                    <td onClick={e => e.stopPropagation()}>
+                    <td onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <select value={o.status} onChange={e => handleStatus(o.id, e.target.value)}
                         style={{ background: 'var(--input-bg)', border: '1px solid var(--glass-border)', color: 'var(--accent-gold)', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', outline: 'none' }}>
                         {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
+                      <button 
+                        onClick={() => window.confirm('Delete this order? This cannot be undone and stock will be restored.') && deleteOrder(o.id)}
+                        style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 4, opacity: 0.7 }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </td>
                   </tr>
                 ))}

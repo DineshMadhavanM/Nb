@@ -101,6 +101,18 @@ export function AppProvider({ children }) {
     }
   }
 
+  const deleteOrder = async (id) => {
+    try {
+      await orderApi.delete(id)
+      setOrders(prev => prev.filter(o => o.id !== id))
+      toast.success('Order deleted and stock restored')
+      // Refresh analytics and products
+      fetchData()
+    } catch (error) {
+      toast.error('Failed to delete order')
+    }
+  }
+
   const addCustomer = async (customer) => {
     try {
       const res = await customerApi.create(customer)
@@ -121,7 +133,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       products, orders, customers, analytics, loading, theme, toggleTheme,
       addProduct, updateProduct, deleteProduct,
-      addOrder, updateOrderStatus,
+      addOrder, updateOrderStatus, deleteOrder,
       addCustomer, fetchData,
       getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST
     }}>

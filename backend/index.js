@@ -159,6 +159,57 @@ app.patch('/api/orders/:id/status', async (req, res) => {
   }
 });
 
+app.delete('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch order first to get details for stock restoration and customer update
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true }
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Restore product stock
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.qty } }
+        });
+      }
+
+      // 2. Adjust customer total spent and loyalty points
+      if (order.customerId) {
+        await tx.customer.update({
+          where: { id: order.customerId },
+          data: {
+            totalSpent: { decrement: order.total },
+            loyaltyPoints: { decrement: Math.floor(order.total / 100) }
+          }
+        });
+      }
+
+      // 3. Delete Invoice
+      await tx.invoice.deleteMany({ where: { orderId: id } });
+
+      // 4. Delete OrderItems
+      await tx.orderItem.deleteMany({ where: { orderId: id } });
+
+      // 5. Delete Order
+      await tx.order.delete({ where: { id } });
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("DELETE Order Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- Customers Routes ---
 app.get('/api/customers', async (req, res) => {
   try {
