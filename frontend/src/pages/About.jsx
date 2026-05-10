@@ -63,7 +63,7 @@ export default function About() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 24 }}>
         <ContactCard icon={User} label="Developer" value="Dinesh Madhavan" />
         <ContactCard icon={Building} label="Company" value="NexStack" />
-        <ContactCard icon={Globe} label="Region" value="Artisan Heritage" />
+        <ContactCard icon={Globe} label="Region" value="Tamil Nadu" />
       </div>
     </div>
   )
