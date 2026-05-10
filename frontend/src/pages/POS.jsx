@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, Plus, Minus, Trash2, X, CreditCard, Smartphone, Banknote, CheckCircle, User } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, Trash2, X, CreditCard, Smartphone, Banknote, CheckCircle, User, Calendar, Clock } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useCart } from '../context/CartContext'
 import toast from 'react-hot-toast'
@@ -13,10 +13,20 @@ function CheckoutModal({ onClose }) {
   const [payMethod, setPayMethod] = useState('UPI')
   const [step, setStep] = useState('review') // review | success
   const [custSearch, setCustSearch] = useState('')
+  const [dueDateType, setDueDateType] = useState('today') // today | tomorrow | custom
+  const [customDays, setCustomDays] = useState('7')
 
   const filteredCusts = customers.filter(c =>
     c.name.toLowerCase().includes(custSearch.toLowerCase()) || c.phone.includes(custSearch)
   ).slice(0, 4)
+
+  const getDueDate = () => {
+    if (payMethod !== 'Credit') return null
+    const date = new Date()
+    if (dueDateType === 'tomorrow') date.setDate(date.getDate() + 1)
+    if (dueDateType === 'custom') date.setDate(date.getDate() + parseInt(customDays || 0))
+    return date.toISOString()
+  }
 
   const handlePay = () => {
     const order = {
@@ -34,6 +44,7 @@ function CheckoutModal({ onClose }) {
       discount,
       total: getTotal(),
       paymentMethod: payMethod,
+      dueDate: getDueDate()
     }
     addOrder(order)
     setStep('success')
@@ -46,8 +57,8 @@ function CheckoutModal({ onClose }) {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring' }}>
           <CheckCircle size={70} color="#8CB874" />
         </motion.div>
-        <h2 style={{ fontFamily: 'Playfair Display', fontSize: 26, color: 'var(--text-main)', marginTop: 16 }}>Payment Successful!</h2>
-        <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>₹{getTotal().toFixed(2)} collected via {payMethod}</p>
+        <h2 style={{ fontFamily: 'Playfair Display', fontSize: 26, color: 'var(--text-main)', marginTop: 16 }}>{payMethod === 'Credit' ? 'Order Recorded!' : 'Payment Successful!'}</h2>
+        <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>₹{getTotal().toFixed(2)} {payMethod === 'Credit' ? 'marked as Credit' : `collected via ${payMethod}`}</p>
       </motion.div>
     </div>
   )
@@ -85,6 +96,45 @@ function CheckoutModal({ onClose }) {
           )}
         </div>
 
+        {/* Payment Method */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Payment Method</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            {[
+              { id: 'UPI', icon: Smartphone }, 
+              { id: 'Card', icon: CreditCard }, 
+              { id: 'Cash', icon: Banknote },
+              { id: 'Credit', icon: Clock }
+            ].map(({ id, icon: Icon }) => (
+              <button key={id} onClick={() => setPayMethod(id)} style={{ padding: '12px 4px', borderRadius: 10, border: `1px solid ${payMethod === id ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: payMethod === id ? 'rgba(140, 184, 116, 0.12)' : 'rgba(15, 23, 11, 0.4)', color: payMethod === id ? 'var(--accent-light)' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 500 }}>
+                <Icon size={16} />
+                {id}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Credit Options */}
+        {payMethod === 'Credit' && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} style={{ background: 'rgba(140, 184, 116, 0.05)', borderRadius: 12, padding: 14, marginBottom: 18, border: '1px dashed var(--accent-gold)' }}>
+            <div style={{ fontSize: 12, color: 'var(--accent-gold)', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase' }}>Payment Due Date</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {['today', 'tomorrow', 'custom'].map(type => (
+                <button key={type} onClick={() => setDueDateType(type)} style={{ flex: 1, padding: '8px', borderRadius: 8, fontSize: 12, border: `1px solid ${dueDateType === type ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: dueDateType === type ? 'var(--accent-gold)' : 'transparent', color: dueDateType === type ? '#0F170B' : 'var(--text-muted)', cursor: 'pointer', textTransform: 'capitalize' }}>
+                  {type}
+                </button>
+              ))}
+            </div>
+            {dueDateType === 'custom' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Pay within</span>
+                <input type="number" value={customDays} onChange={e => setCustomDays(e.target.value)} style={{ width: 60, background: 'rgba(255,255,255,0.1)', border: '1px solid var(--glass-border)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-main)', textAlign: 'center' }} />
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>days</span>
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {/* Order Summary */}
         <div style={{ background: 'rgba(15, 23, 11, 0.5)', borderRadius: 10, padding: '14px', marginBottom: 18, border: '1px solid var(--glass-border)' }}>
           {cart.map(i => (
@@ -119,21 +169,8 @@ function CheckoutModal({ onClose }) {
           ))}
         </div>
 
-        {/* Payment Method */}
-        <div style={{ marginBottom: 22 }}>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Payment Method</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {[{ id: 'UPI', icon: Smartphone }, { id: 'Card', icon: CreditCard }, { id: 'Cash', icon: Banknote }].map(({ id, icon: Icon }) => (
-              <button key={id} onClick={() => setPayMethod(id)} style={{ flex: 1, padding: '12px 8px', borderRadius: 10, border: `1px solid ${payMethod === id ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: payMethod === id ? 'rgba(140, 184, 116, 0.12)' : 'rgba(15, 23, 11, 0.4)', color: payMethod === id ? 'var(--accent-light)' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500 }}>
-                <Icon size={16} />
-                {id}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <button onClick={handlePay} className="btn-gold" style={{ width: '100%', padding: '14px', borderRadius: 10, fontSize: 15 }}>
-          Confirm Payment · ₹{getTotal().toFixed(2)}
+          {payMethod === 'Credit' ? 'Record Credit Order' : `Confirm Payment · ₹${getTotal().toFixed(2)}`}
         </button>
       </motion.div>
     </div>

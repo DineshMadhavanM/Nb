@@ -79,8 +79,10 @@ app.get('/api/orders', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customerId, customerName, items, subtotal, gst, discount, total, paymentMethod } = req.body;
+    const { customerId, customerName, items, subtotal, gst, discount, total, paymentMethod, dueDate } = req.body;
     
+    const orderStatus = paymentMethod === 'Credit' ? 'unpaid' : 'paid';
+
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
@@ -93,6 +95,8 @@ app.post('/api/orders', async (req, res) => {
           discount,
           total,
           paymentMethod,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          status: orderStatus,
           items: {
             create: items.map(item => ({
               productId: item.productId,
