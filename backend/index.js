@@ -216,6 +216,8 @@ app.delete('/api/orders/:id', async (req, res) => {
 
       // 5. Delete Order
       await tx.order.delete({ where: { id } });
+    }, {
+      timeout: 30000 // 30 seconds timeout
     });
 
     res.status(204).send();
