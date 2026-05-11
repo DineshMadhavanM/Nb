@@ -85,10 +85,33 @@ app.post('/api/orders', async (req, res) => {
 
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
+      let finalCustomerId = customerId;
+
+      // Automatically create or find customer if phone is provided but no ID
+      if (!finalCustomerId && customerPhone && customerName !== 'Walk-in Customer') {
+        const existingCustomer = await tx.customer.findUnique({
+          where: { phone: customerPhone }
+        });
+
+        if (existingCustomer) {
+          finalCustomerId = existingCustomer.id;
+        } else {
+          const newCustomer = await tx.customer.create({
+            data: {
+              name: customerName,
+              phone: customerPhone,
+              totalSpent: 0,
+              loyaltyPoints: 0
+            }
+          });
+          finalCustomerId = newCustomer.id;
+        }
+      }
+
       const newOrder = await tx.order.create({
         data: {
           customId: `ORD-${Date.now()}`,
-          customerId,
+          customerId: finalCustomerId,
           customerName,
           customerPhone,
           subtotal,
@@ -120,9 +143,9 @@ app.post('/api/orders', async (req, res) => {
       }
 
       // Update customer total spent and loyalty points
-      if (customerId) {
+      if (finalCustomerId) {
         await tx.customer.update({
-          where: { id: customerId },
+          where: { id: finalCustomerId },
           data: {
             totalSpent: { increment: total },
             loyaltyPoints: { increment: Math.floor(total / 100) }
