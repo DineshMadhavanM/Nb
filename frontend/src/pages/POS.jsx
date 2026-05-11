@@ -16,6 +16,9 @@ function CheckoutModal({ onClose }) {
   const [dueDateType, setDueDateType] = useState('today') // today | tomorrow | custom
   const [customDays, setCustomDays] = useState('7')
 
+  const [newCustName, setNewCustName] = useState('')
+  const [newCustPhone, setNewCustPhone] = useState('')
+
   const filteredCusts = customers.filter(c =>
     c.name.toLowerCase().includes(custSearch.toLowerCase()) || c.phone.includes(custSearch)
   ).slice(0, 4)
@@ -31,7 +34,8 @@ function CheckoutModal({ onClose }) {
   const handlePay = () => {
     const order = {
       customerId: selectedCustomer?.id || null,
-      customerName: selectedCustomer?.name || 'Walk-in Customer',
+      customerName: selectedCustomer?.name || newCustName || 'Walk-in Customer',
+      customerPhone: selectedCustomer?.phone || newCustPhone || '',
       items: cart.map(i => ({ 
         productId: i.productId, 
         name: i.name, 
@@ -86,9 +90,23 @@ function CheckoutModal({ onClose }) {
             </div>
           ) : (
             <div>
-              <input className="input-dark" value={custSearch} onChange={e => setCustSearch(e.target.value)} placeholder="Search customer or walk-in..." />
+              <input className="input-dark" value={custSearch} onChange={e => setCustSearch(e.target.value)} placeholder="Search customer or walk-in..." style={{ marginBottom: 12 }} />
+              
+              {!custSearch && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: 'var(--accent-gold)', marginBottom: 4, textTransform: 'uppercase' }}>New Customer (Opt)</div>
+                    <input className="input-dark" value={newCustName} onChange={e => setNewCustName(e.target.value)} placeholder="Name" style={{ fontSize: 12, height: 38 }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: 'var(--accent-gold)', marginBottom: 4, textTransform: 'uppercase' }}>Phone No (Opt)</div>
+                    <input className="input-dark" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} placeholder="Phone" style={{ fontSize: 12, height: 38 }} />
+                  </div>
+                </div>
+              )}
+
               {custSearch && filteredCusts.map(c => (
-                <div key={c.id} onClick={() => { setSelectedCustomer(c); setCustSearch('') }} style={{ padding: '9px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text-main)', borderBottom: '1px solid var(--glass-border)' }}>
+                <div key={c.id} onClick={() => { setSelectedCustomer(c); setCustSearch(''); setNewCustName(''); setNewCustPhone('') }} style={{ padding: '9px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text-main)', borderBottom: '1px solid var(--glass-border)' }}>
                   {c.name} <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{c.phone}</span>
                 </div>
               ))}

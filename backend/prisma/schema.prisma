@@ -38,6 +38,7 @@ model Order {
   customId      String      @unique // For the ORD-123 format
   customerId    String?     @db.ObjectId
   customerName  String
+  customerPhone String?
   subtotal      Float
   gst           Float?      @default(0)
   discount      Float       @default(0)

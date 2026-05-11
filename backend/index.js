@@ -79,7 +79,7 @@ app.get('/api/orders', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customerId, customerName, items, subtotal, gst, discount, total, paymentMethod, dueDate } = req.body;
+    const { customerId, customerName, customerPhone, items, subtotal, gst, discount, total, paymentMethod, dueDate } = req.body;
     
     const payStatus = paymentMethod === 'Credit' ? 'unpaid' : 'paid';
 
@@ -90,6 +90,7 @@ app.post('/api/orders', async (req, res) => {
           customId: `ORD-${Date.now()}`,
           customerId,
           customerName,
+          customerPhone,
           subtotal,
           gst,
           discount,
