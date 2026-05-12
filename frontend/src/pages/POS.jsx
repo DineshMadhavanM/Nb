@@ -212,14 +212,6 @@ function CheckoutModal({ onClose }) {
   )
 }
 
-        <button onClick={handlePay} className="btn-gold" style={{ width: '100%', padding: '14px', borderRadius: 10, fontSize: 15 }}>
-          {payMethod === 'Credit' ? 'Record Credit Order' : `Confirm Payment · ₹${getTotal().toFixed(2)}`}
-        </button>
-      </motion.div>
-    </div>
-  )
-}
-
 export default function POS() {
   const { products, categories } = useApp()
   const { cart, addToCart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount } = useCart()
