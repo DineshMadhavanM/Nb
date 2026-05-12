@@ -17,6 +17,7 @@ function ProductModal({ product, onSave, onClose }) {
     if (!form.name || !form.price) { toast.error('Please fill all required fields'); return }
     onSave({ 
       ...form, 
+      category: form.category === 'Custom' ? form.customCategory : form.category,
       price: Number(form.price), 
       stock: Number(form.stock || 0),
       gstRate: Number(form.gstRate || 0)
@@ -44,8 +45,15 @@ function ProductModal({ product, onSave, onClose }) {
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Category</label>
               <select className="input-dark" value={form.category} onChange={e => set('category', e.target.value)}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="Custom">-- Custom Category --</option>
               </select>
             </div>
+            {form.category === 'Custom' && (
+              <div style={{ gridColumn: '1/-1' }}>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>New Category Name</label>
+                <input className="input-dark" value={form.customCategory || ''} onChange={e => set('customCategory', e.target.value)} placeholder="Type new category..." required />
+              </div>
+            )}
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</label>
               <select className="input-dark" value={form.unit} onChange={e => set('unit', e.target.value)}>
