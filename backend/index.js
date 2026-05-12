@@ -55,7 +55,10 @@ app.put('/api/products/:id', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.product.delete({ where: { id } });
+    const deleted = await prisma.product.deleteMany({ where: { id } });
+    if (deleted.count === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
     res.status(204).send();
   } catch (error) {
     console.error("DELETE Products Error:", error);
