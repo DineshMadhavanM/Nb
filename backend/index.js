@@ -317,6 +317,13 @@ app.get('/api/analytics/dashboard', async (req, res) => {
     const todayRevenue = todayOrders
       .filter(o => o.paymentStatus === 'paid')
       .reduce((sum, o) => sum + o.total, 0);
+
+    const todayDiscounts = todayOrders
+      .reduce((sum, o) => sum + (o.discount || 0), 0);
+
+    const allOrders = await prisma.order.findMany({ select: { discount: true } });
+    const totalDiscounts = allOrders.reduce((sum, o) => sum + (o.discount || 0), 0);
+    
     const totalOrdersCount = await prisma.order.count();
     
     // Simplified AI Sales Prediction (Mocked logic for demo)
@@ -333,6 +340,8 @@ app.get('/api/analytics/dashboard', async (req, res) => {
     res.json({
       todayRevenue,
       todayOrders: todayOrders.length,
+      todayDiscounts,
+      totalDiscounts,
       totalOrdersCount,
       predictions
     });

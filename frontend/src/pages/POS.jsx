@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 
 
 function CheckoutModal({ onClose }) {
-  const { cart, selectedCustomer, getSubtotal, getGST, getTotal, discount, setDiscount, clearCart, setSelectedCustomer } = useCart()
+  const { cart, selectedCustomer, getSubtotal, getGST, getDiscountAmount, getTotal, discount, setDiscount, discountType, setDiscountType, clearCart, setSelectedCustomer } = useCart()
   const { addOrder, customers } = useApp()
   const [payMethod, setPayMethod] = useState('UPI')
   const [step, setStep] = useState('review') // review | success
@@ -44,7 +44,7 @@ function CheckoutModal({ onClose }) {
       })),
       subtotal: getSubtotal(),
       gst: getGST(),
-      discount,
+      discount: getDiscountAmount(),
       total: getTotal(),
       paymentMethod: payMethod,
       dueDate: getDueDate()
@@ -165,7 +165,7 @@ function CheckoutModal({ onClose }) {
               <span>Subtotal</span><span>₹{getSubtotal().toFixed(2)}</span>
             </div>
             {discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#8CB874', marginBottom: 4 }}>
-              <span>Discount ({discount}%)</span><span>-₹{(getSubtotal() * discount / 100).toFixed(2)}</span>
+              <span>Discount ({discountType === 'percent' ? `${discount}%` : `₹${discount}`})</span><span>-₹{getDiscountAmount().toFixed(2)}</span>
             </div>}
             {getGST() > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--accent-gold)', marginBottom: 4 }}>
               <span>GST</span><span>+₹{getGST().toFixed(2)}</span>
@@ -177,14 +177,40 @@ function CheckoutModal({ onClose }) {
         </div>
 
         {/* Discount */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Discount %</span>
-          {[0, 5, 10, 15].map(d => (
-            <button key={d} onClick={() => setDiscount(d)} style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, border: `1px solid ${discount === d ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: discount === d ? 'rgba(140, 184, 116, 0.15)' : 'transparent', color: discount === d ? 'var(--accent-light)' : 'var(--text-muted)', cursor: 'pointer' }}>
-              {d}%
-            </button>
-          ))}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Discount</div>
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 3, border: '1px solid var(--glass-border)' }}>
+              <button onClick={() => setDiscountType('percent')} style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, border: 'none', background: discountType === 'percent' ? 'var(--accent-gold)' : 'transparent', color: discountType === 'percent' ? '#0F170B' : 'var(--text-muted)', cursor: 'pointer' }}>%</button>
+              <button onClick={() => setDiscountType('fixed')} style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, border: 'none', background: discountType === 'fixed' ? 'var(--accent-gold)' : 'transparent', color: discountType === 'fixed' ? '#0F170B' : 'var(--text-muted)', cursor: 'pointer' }}>₹</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input 
+              type="number" 
+              className="input-dark" 
+              value={discount || ''} 
+              onChange={e => setDiscount(Number(e.target.value))} 
+              placeholder={`Enter ${discountType === 'percent' ? 'percentage' : 'amount'}...`}
+              style={{ flex: 1 }}
+            />
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(discountType === 'percent' ? [0, 5, 10, 15] : [0, 50, 100, 200]).map(d => (
+                <button key={d} onClick={() => setDiscount(d)} style={{ padding: '0 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: `1px solid ${discount === d ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: discount === d ? 'rgba(140, 184, 116, 0.15)' : 'transparent', color: discount === d ? 'var(--accent-light)' : 'var(--text-muted)', cursor: 'pointer' }}>
+                  {d}{discountType === 'percent' ? '%' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
+
+        <button onClick={handlePay} className="btn-gold" style={{ width: '100%', padding: '14px', borderRadius: 10, fontSize: 15 }}>
+          {payMethod === 'Credit' ? 'Record Credit Order' : `Confirm Payment · ₹${getTotal().toFixed(2)}`}
+        </button>
+      </motion.div>
+    </div>
+  )
+}
 
         <button onClick={handlePay} className="btn-gold" style={{ width: '100%', padding: '14px', borderRadius: 10, fontSize: 15 }}>
           {payMethod === 'Credit' ? 'Record Credit Order' : `Confirm Payment · ₹${getTotal().toFixed(2)}`}

@@ -164,6 +164,8 @@ export function AppProvider({ children }) {
   // Analytics Helpers
   const getTodayRevenue = () => analytics?.todayRevenue || 0
   const getTodayOrders = () => analytics?.todayOrders || 0
+  const getTodayDiscounts = () => analytics?.todayDiscounts || 0
+  const getTotalDiscounts = () => analytics?.totalDiscounts || 0
   const getMonthlyRevenue = () => orders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0)
   const getTotalGST = () => orders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + (o.gst || 0), 0)
 
@@ -173,7 +175,7 @@ export function AppProvider({ children }) {
       addProduct, updateProduct, deleteProduct,
       addOrder, updateOrderStatus, updatePaymentStatus, deleteOrder,
       addCustomer, addCategory, deleteCategory, fetchData,
-      getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST
+      getTodayRevenue, getTodayOrders, getTodayDiscounts, getTotalDiscounts, getMonthlyRevenue, getTotalGST
     }}>
       {children}
     </AppContext.Provider>

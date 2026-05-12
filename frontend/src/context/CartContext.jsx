@@ -6,6 +6,7 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [discount, setDiscount] = useState(0)
+  const [discountType, setDiscountType] = useState('percent') // 'percent' | 'fixed'
   const [note, setNote] = useState('')
 
   const addToCart = (product) => {
@@ -37,6 +38,7 @@ export function CartProvider({ children }) {
     setCart([])
     setSelectedCustomer(null)
     setDiscount(0)
+    setDiscountType('percent')
     setNote('')
   }
 
@@ -44,21 +46,29 @@ export function CartProvider({ children }) {
 
   const getGST = () => cart.reduce((sum, i) => sum + (i.price * i.qty * (i.gstRate || 0)) / 100, 0)
   
+  const getDiscountAmount = () => {
+    const sub = getSubtotal()
+    if (discountType === 'percent') {
+      return (sub * discount) / 100
+    }
+    return discount
+  }
+
   const getTotal = () => {
     const sub = getSubtotal()
-    const discAmt = (sub * discount) / 100
+    const discAmt = getDiscountAmount()
     const gstAmt = getGST()
-    return sub - discAmt + gstAmt
+    return Math.max(0, sub - discAmt + gstAmt)
   }
 
   const getItemCount = () => cart.reduce((sum, i) => sum + i.qty, 0)
 
   return (
     <CartContext.Provider value={{
-      cart, selectedCustomer, discount, note,
-      setSelectedCustomer, setDiscount, setNote,
+      cart, selectedCustomer, discount, discountType, note,
+      setSelectedCustomer, setDiscount, setDiscountType, setNote,
       addToCart, removeFromCart, updateQty, clearCart,
-      getSubtotal, getGST, getTotal, getItemCount
+      getSubtotal, getGST, getDiscountAmount, getTotal, getItemCount
     }}>
       {children}
     </CartContext.Provider>

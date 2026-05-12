@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, ShoppingBag, Receipt, Users, ArrowUpRight, Zap, Trash2 } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Receipt, Users, ArrowUpRight, Zap, Trash2, Percent } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { format, subDays, startOfMonth, eachDayOfInterval, isSameDay } from 'date-fns'
@@ -54,7 +54,10 @@ function StatCard({ icon: Icon, label, value, change, color, delay }) {
 }
 
 export default function Dashboard() {
-  const { orders, getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST, analytics, deleteOrder, updatePaymentStatus } = useApp()
+  const { 
+    orders, getTodayRevenue, getTodayOrders, getTodayDiscounts, getTotalDiscounts, 
+    getMonthlyRevenue, getTotalGST, analytics, deleteOrder, updatePaymentStatus 
+  } = useApp()
   const [chartMode, setChartMode] = useState('weekly')
 
   const chartData = useMemo(() => {
@@ -96,10 +99,12 @@ export default function Dashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 24 }}>
         <StatCard icon={TrendingUp} label="Today's Revenue" value={`₹${Math.round(getTodayRevenue() || 0)}`} change="0%" color="#8CB874" delay={0} />
         <StatCard icon={ShoppingBag} label="Today's Orders" value={getTodayOrders() || 0} change="0" color="#60a5fa" delay={0.08} />
+        <StatCard icon={Percent} label="Today's Discounts" value={`₹${Math.round(getTodayDiscounts() || 0)}`} change="OFF" color="#f87171" delay={0.12} />
         <StatCard icon={Receipt} label="Monthly Revenue" value={`₹${Math.round(getMonthlyRevenue() || 0)}`} change="0%" color="#8CB874" delay={0.16} />
+        <StatCard icon={Percent} label="Total Discounts" value={`₹${Math.round(getTotalDiscounts() || 0)}`} change="TOTAL" color="#fbbf24" delay={0.2} />
         <StatCard icon={Users} label="Total GST Collected" value={`₹${Math.round(getTotalGST() || 0)}`} change="GST 5%" color="#4ade80" delay={0.24} />
       </div>
 
