@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { productApi, orderApi, customerApi, analyticsApi } from '../lib/api'
+import { productApi, orderApi, customerApi, analyticsApi, categoryApi } from '../lib/api'
 import toast from 'react-hot-toast'
 
 const AppContext = createContext()
