@@ -15,8 +15,11 @@ function ProductModal({ product, onSave, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!form.name || !form.price) { toast.error('Please fill all required fields'); return }
+    
+    const { customCategory, ...productData } = form
+    
     onSave({ 
-      ...form, 
+      ...productData, 
       category: form.category === 'Custom' ? form.customCategory : form.category,
       price: Number(form.price), 
       stock: Number(form.stock || 0),
