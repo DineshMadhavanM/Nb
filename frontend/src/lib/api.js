@@ -26,6 +26,12 @@ export const customerApi = {
   create: (data) => api.post('/customers', data),
 };
 
+export const categoryApi = {
+  getAll: () => api.get('/categories'),
+  create: (data) => api.post('/categories', data),
+  delete: (id) => api.delete(`/categories/${id}`),
+};
+
 export const analyticsApi = {
   getDashboard: () => api.get('/analytics/dashboard'),
 };

@@ -66,6 +66,35 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
+// --- Category Routes ---
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/categories', async (req, res) => {
+  try {
+    const category = await prisma.category.create({ data: req.body });
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.category.delete({ where: { id } });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- Orders Routes ---
 app.get('/api/orders', async (req, res) => {
   try {

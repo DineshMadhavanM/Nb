@@ -4,23 +4,17 @@ import { Plus, Search, Edit2, Trash2, X, AlertTriangle } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import toast from 'react-hot-toast'
 
-const CATEGORIES = ['None / General', 'Brownie', 'Tres Leches', 'Cookies', 'Muffins', 'Jar Cake', 'Panna Cotta', 'Mousse', 'Beverages', 'Mojito', 'Snacks']
-
-const emptyForm = { name: '', category: 'None / General', price: '', stock: '', unit: 'pcs', description: '', gstRate: 0 }
-
 function ProductModal({ product, onSave, onClose }) {
-  const [form, setForm] = useState(product || emptyForm)
+  const { categories } = useApp()
+  const [form, setForm] = useState(product || { name: '', category: categories[0]?.name || '', price: '', stock: '', unit: 'pcs', description: '', gstRate: 0 })
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!form.name || !form.price) { toast.error('Please fill all required fields'); return }
     
-    const { customCategory, ...productData } = form
-    
     onSave({ 
-      ...productData, 
-      category: form.category === 'Custom' ? form.customCategory : form.category,
+      ...form, 
       price: Number(form.price), 
       stock: Number(form.stock || 0),
       gstRate: Number(form.gstRate || 0)
@@ -47,16 +41,10 @@ function ProductModal({ product, onSave, onClose }) {
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Category</label>
               <select className="input-dark" value={form.category} onChange={e => set('category', e.target.value)}>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                <option value="Custom">-- Custom Category --</option>
+                <option value="">Select Category</option>
+                {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
               </select>
             </div>
-            {form.category === 'Custom' && (
-              <div style={{ gridColumn: '1/-1' }}>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>New Category Name</label>
-                <input className="input-dark" value={form.customCategory || ''} onChange={e => set('customCategory', e.target.value)} placeholder="Type new category..." required />
-              </div>
-            )}
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</label>
               <select className="input-dark" value={form.unit} onChange={e => set('unit', e.target.value)}>
@@ -94,7 +82,7 @@ function ProductModal({ product, onSave, onClose }) {
 }
 
 export default function Stock() {
-  const { products, addProduct, updateProduct, deleteProduct } = useApp()
+  const { products, addProduct, updateProduct, deleteProduct, categories } = useApp()
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('All')
   const [modal, setModal] = useState(null)
@@ -148,9 +136,12 @@ export default function Stock() {
           <input className="input-dark" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products..." style={{ paddingLeft: 32, height: 44 }} />
         </div>
         <div className="no-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-          {['All', ...CATEGORIES].map(c => (
-            <button key={c} onClick={() => setCatFilter(c)} style={{ padding: '8px 16px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: `1px solid ${catFilter === c ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: catFilter === c ? 'rgba(104, 159, 56, 0.1)' : 'transparent', color: catFilter === c ? 'var(--accent-light)' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              {c}
+          <button onClick={() => setCatFilter('All')} style={{ padding: '8px 16px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: `1px solid ${catFilter === 'All' ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: catFilter === 'All' ? 'rgba(104, 159, 56, 0.1)' : 'transparent', color: catFilter === 'All' ? 'var(--accent-light)' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            All
+          </button>
+          {categories.map(c => (
+            <button key={c.id} onClick={() => setCatFilter(c.name)} style={{ padding: '8px 16px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: `1px solid ${catFilter === c.name ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: catFilter === c.name ? 'rgba(104, 159, 56, 0.1)' : 'transparent', color: catFilter === c.name ? 'var(--accent-light)' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {c.name}
             </button>
           ))}
         </div>

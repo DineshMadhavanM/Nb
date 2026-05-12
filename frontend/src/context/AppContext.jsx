@@ -8,6 +8,7 @@ export function AppProvider({ children }) {
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
   const [customers, setCustomers] = useState([])
+  const [categories, setCategories] = useState([])
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
   const [theme, setTheme] = useState(localStorage.getItem('nineteen06-theme') || 'light')
@@ -26,22 +27,25 @@ export function AppProvider({ children }) {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [prodRes, orderRes, custRes, anaRes] = await Promise.all([
+      const [prodRes, orderRes, custRes, anaRes, catRes] = await Promise.all([
         productApi.getAll(),
         orderApi.getAll(),
         customerApi.getAll(),
-        analyticsApi.getDashboard()
+        analyticsApi.getDashboard(),
+        categoryApi.getAll()
       ])
       setProducts(prodRes.data || [])
       setOrders(orderRes.data || [])
       setCustomers(custRes.data || [])
       setAnalytics(anaRes.data || null)
+      setCategories(catRes.data || [])
     } catch (error) {
       console.error('Error fetching data:', error)
       toast.error('Failed to connect to the server')
       setProducts([])
       setOrders([])
       setCustomers([])
+      setCategories([])
     } finally {
       setLoading(false)
     }
@@ -136,6 +140,27 @@ export function AppProvider({ children }) {
     }
   }
 
+  const addCategory = async (category) => {
+    try {
+      const res = await categoryApi.create(category)
+      setCategories(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)))
+      toast.success('Category added')
+      return res.data
+    } catch (error) {
+      toast.error('Failed to add category')
+    }
+  }
+
+  const deleteCategory = async (id) => {
+    try {
+      await categoryApi.delete(id)
+      setCategories(prev => prev.filter(c => c.id !== id))
+      toast.success('Category deleted')
+    } catch (error) {
+      toast.error('Failed to delete category')
+    }
+  }
+
   // Analytics Helpers
   const getTodayRevenue = () => analytics?.todayRevenue || 0
   const getTodayOrders = () => analytics?.todayOrders || 0
@@ -144,10 +169,10 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      products, orders, customers, analytics, loading, theme, toggleTheme,
+      products, orders, customers, categories, analytics, loading, theme, toggleTheme,
       addProduct, updateProduct, deleteProduct,
       addOrder, updateOrderStatus, updatePaymentStatus, deleteOrder,
-      addCustomer, fetchData,
+      addCustomer, addCategory, deleteCategory, fetchData,
       getTodayRevenue, getTodayOrders, getMonthlyRevenue, getTotalGST
     }}>
       {children}

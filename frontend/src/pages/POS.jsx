@@ -5,7 +5,6 @@ import { useApp } from '../context/AppContext'
 import { useCart } from '../context/CartContext'
 import toast from 'react-hot-toast'
 
-const CATEGORIES = ['All', 'Brownie', 'Tres Leches', 'Cookies', 'Muffins', 'Jar Cake', 'Panna Cotta', 'Mousse', 'Beverages', 'Mojito', 'Snacks']
 
 function CheckoutModal({ onClose }) {
   const { cart, selectedCustomer, getSubtotal, getGST, getTotal, discount, setDiscount, clearCart, setSelectedCustomer } = useCart()
@@ -196,7 +195,7 @@ function CheckoutModal({ onClose }) {
 }
 
 export default function POS() {
-  const { products } = useApp()
+  const { products, categories } = useApp()
   const { cart, addToCart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount } = useCart()
   const [category, setCategory] = useState('All')
   const [search, setSearch] = useState('')
@@ -222,15 +221,24 @@ export default function POS() {
             
             {/* Category Tabs (Scrollable on mobile) */}
             <div className="no-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-              {CATEGORIES.map(cat => (
-                <button key={cat} onClick={() => setCategory(cat)} style={{ 
+              <button onClick={() => setCategory('All')} style={{ 
+                padding: '8px 20px', borderRadius: 20, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
+                border: `1px solid ${category === 'All' ? 'var(--accent-gold)' : 'var(--glass-border)'}`, 
+                background: category === 'All' ? 'rgba(140, 184, 116, 0.15)' : 'rgba(15,23,11,0.5)', 
+                color: category === 'All' ? 'var(--accent-light)' : 'var(--text-muted)', 
+                cursor: 'pointer', transition: 'all 0.2s' 
+              }}>
+                All
+              </button>
+              {categories.map(cat => (
+                <button key={cat.id} onClick={() => setCategory(cat.name)} style={{ 
                   padding: '8px 20px', borderRadius: 20, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-                  border: `1px solid ${category === cat ? 'var(--accent-gold)' : 'var(--glass-border)'}`, 
-                  background: category === cat ? 'rgba(140, 184, 116, 0.15)' : 'rgba(15,23,11,0.5)', 
-                  color: category === cat ? 'var(--accent-light)' : 'var(--text-muted)', 
+                  border: `1px solid ${category === cat.name ? 'var(--accent-gold)' : 'var(--glass-border)'}`, 
+                  background: category === cat.name ? 'rgba(140, 184, 116, 0.15)' : 'rgba(15,23,11,0.5)', 
+                  color: category === cat.name ? 'var(--accent-light)' : 'var(--text-muted)', 
                   cursor: 'pointer', transition: 'all 0.2s' 
                 }}>
-                  {cat}
+                  {cat.name}
                 </button>
               ))}
             </div>

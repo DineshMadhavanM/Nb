@@ -9,6 +9,7 @@ import POS from './pages/POS'
 import Orders from './pages/Orders'
 import Invoices from './pages/Invoices'
 import Stock from './pages/Stock'
+import Categories from './pages/Categories'
 import Customers from './pages/Customers'
 import Reports from './pages/Reports'
 import About from './pages/About'
@@ -42,6 +43,7 @@ export default function App() {
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/invoices" element={<Invoices />} />
                 <Route path="/stock" element={<Stock />} />
+                <Route path="/categories" element={<Categories />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/about" element={<About />} />

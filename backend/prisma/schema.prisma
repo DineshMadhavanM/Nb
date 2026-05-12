@@ -21,6 +21,12 @@ model Product {
   OrderItems  OrderItem[]
 }
 
+model Category {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
 model Customer {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   name          String
