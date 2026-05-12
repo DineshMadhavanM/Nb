@@ -4,9 +4,9 @@ import { Plus, Search, Edit2, Trash2, X, AlertTriangle } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import toast from 'react-hot-toast'
 
-const CATEGORIES = ['Brownie', 'Tres Leches', 'Cookies', 'Muffins', 'Jar Cake', 'Panna Cotta', 'Mousse', 'Beverages', 'Mojito', 'Snacks']
+const CATEGORIES = ['None / General', 'Brownie', 'Tres Leches', 'Cookies', 'Muffins', 'Jar Cake', 'Panna Cotta', 'Mousse', 'Beverages', 'Mojito', 'Snacks']
 
-const emptyForm = { name: '', category: 'Brownie', price: '', stock: '', unit: 'pcs', description: '', gstRate: 0 }
+const emptyForm = { name: '', category: 'None / General', price: '', stock: '', unit: 'pcs', description: '', gstRate: 0 }
 
 function ProductModal({ product, onSave, onClose }) {
   const [form, setForm] = useState(product || emptyForm)
