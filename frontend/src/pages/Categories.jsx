@@ -33,23 +33,30 @@ export default function Categories() {
         <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Organize your products with custom categories</p>
       </div>
 
-      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: 20, padding: 24, boxShadow: 'var(--shadow-main)', marginBottom: 32 }}>
-        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1, position: 'relative' }}>
+      <div className="category-form-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: 20, padding: 24, boxShadow: 'var(--shadow-main)', marginBottom: 32 }}>
+        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 260px', position: 'relative' }}>
             <Tag size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               className="input-dark" 
               value={newName} 
               onChange={e => setNewName(e.target.value)} 
-              placeholder="Enter new category name (e.g. Pastries)" 
-              style={{ paddingLeft: 42, height: 48 }}
+              placeholder="New category name..." 
+              style={{ paddingLeft: 42, height: 48, width: '100%' }}
             />
           </div>
-          <button type="submit" className="btn-gold" style={{ padding: '0 24px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8, height: 48, fontWeight: 600 }}>
+          <button type="submit" className="btn-gold" style={{ flex: '1 1 140px', padding: '0 24px', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, fontWeight: 600 }}>
             <Plus size={18} /> Add Category
           </button>
         </form>
       </div>
+
+      <style>{`
+        @media (max-width: 600px) {
+          .category-form-card { padding: 16px !important; }
+          h1 { fontSize: 24px !important; }
+        }
+      `}</style>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
         <AnimatePresence>
