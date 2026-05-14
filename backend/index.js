@@ -247,10 +247,12 @@ app.delete('/api/orders/:id', async (req, res) => {
     await prisma.$transaction(async (tx) => {
       // 1. Restore product stock
       for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.qty } }
-        });
+        if (item.productId) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.qty } }
+          });
+        }
       }
 
       // 2. Adjust customer total spent and loyalty points
