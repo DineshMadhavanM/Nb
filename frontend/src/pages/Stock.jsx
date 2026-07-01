@@ -164,13 +164,6 @@ export default function Stock() {
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>{p.description || 'No description provided'}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontFamily: 'Playfair Display', fontSize: 19, color: 'var(--accent-gold)', fontWeight: 800 }}>₹{p.price}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: stockColor(p.stock) }} />
-                  <span style={{ fontSize: 13, color: stockColor(p.stock), fontWeight: 700 }}>{p.stock} {p.unit}</span>
-                </div>
-              </div>
-              <div style={{ marginTop: 12, height: 6, borderRadius: 3, background: 'rgba(104,184,116,0.1)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(100, (p.stock / 30) * 100)}%`, background: stockColor(p.stock), borderRadius: 3, transition: 'width 0.5s ease' }} />
               </div>
             </motion.div>
           ))}

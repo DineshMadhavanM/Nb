@@ -13,7 +13,7 @@ export default function Layout() {
 
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
-    { path: '/pos', icon: ShoppingCart, label: 'POS' },
+    { path: '/pos', icon: ShoppingCart, label: 'New bill +' },
     { path: '/orders', icon: ClipboardList, label: 'Orders' },
     { path: '/about', icon: Info, label: 'About' },
   ]

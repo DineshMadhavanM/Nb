@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { productApi, orderApi, customerApi, analyticsApi, categoryApi } from '../lib/api'
 import toast from 'react-hot-toast'
+import { startOfMonth } from 'date-fns'
 
 const AppContext = createContext()
 
@@ -96,10 +97,16 @@ export function AppProvider({ children }) {
     }
   }
 
-  const updateOrderStatus = async (id, status) => {
+  const updateOrderStatus = async (id, status, paymentMethod, paymentStatus) => {
     try {
-      const res = await orderApi.updateStatus(id, status)
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: res.data.status } : o))
+      const res = await orderApi.updateStatus(id, status, paymentMethod, paymentStatus)
+      setOrders(prev => prev.map(o => o.id === id ? { 
+        ...o, 
+        status: res.data.status,
+        paymentMethod: res.data.paymentMethod,
+        paymentStatus: res.data.paymentStatus
+      } : o))
+      fetchData() // Refresh analytics
     } catch (error) {
       toast.error('Failed to update status')
     }
@@ -166,7 +173,13 @@ export function AppProvider({ children }) {
   const getTodayOrders = () => analytics?.todayOrders || 0
   const getTodayDiscounts = () => analytics?.todayDiscounts || 0
   const getTotalDiscounts = () => analytics?.totalDiscounts || 0
-  const getMonthlyRevenue = () => orders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0)
+  const getMonthlyRevenue = () => {
+    const start = startOfMonth(new Date())
+    return orders.filter(o => {
+      const orderDate = o.paidAt ? new Date(o.paidAt) : new Date(o.createdAt)
+      return o.paymentStatus === 'paid' && o.status !== 'cancelled' && orderDate >= start
+    }).reduce((sum, o) => sum + o.total, 0)
+  }
   const getTotalGST = () => orders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + (o.gst || 0), 0)
 
   return (

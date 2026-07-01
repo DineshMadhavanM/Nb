@@ -53,6 +53,7 @@ model Order {
   dueDate       DateTime?
   paymentStatus String      @default("paid")
   status        String      @default("pending")
+  paidAt        DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   Customer      Customer?   @relation(fields: [customerId], references: [id])

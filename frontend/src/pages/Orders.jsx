@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, ChevronDown, Trash2 } from 'lucide-react'
+import { Search, Filter, ChevronDown, Trash2, Smartphone, CreditCard, Banknote } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -11,12 +11,29 @@ const STATUS_OPTIONS = ['pending', 'preparing', 'ready', 'delivered', 'cancelled
 export default function Orders() {
   const { orders, updateOrderStatus, updatePaymentStatus, deleteOrder } = useApp()
   const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
   const [selected, setSelected] = useState(null)
+  const [paymentPromptOrder, setPaymentPromptOrder] = useState(null)
+
+  const handleDeliverCredit = async (orderId, chosenMethod) => {
+    try {
+      await updateOrderStatus(orderId, 'delivered', chosenMethod, 'paid')
+      toast.success('Order marked as Delivered')
+      setPaymentPromptOrder(null)
+      if (selected?.id === orderId) {
+        setSelected(prev => ({
+          ...prev,
+          status: 'delivered',
+          paymentMethod: chosenMethod,
+          paymentStatus: 'paid'
+        }))
+      }
+    } catch (err) {
+      toast.error('Failed to update status')
+    }
+  }
 
   const filtered = orders.filter(o =>
-    (filterStatus === 'all' || o.status === filterStatus) &&
-    (o.id.toLowerCase().includes(search.toLowerCase()) || o.customerName.toLowerCase().includes(search.toLowerCase()))
+    o.id.toLowerCase().includes(search.toLowerCase()) || o.customerName.toLowerCase().includes(search.toLowerCase())
   )
 
   const handleStatus = (id, status) => {
@@ -34,28 +51,11 @@ export default function Orders() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+        <div style={{ position: 'relative', flex: 1 }}>
           <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input className="input-dark" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search orders..." style={{ paddingLeft: 34 }} />
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input-dark" style={{ width: 160 }}>
-          <option value="all">All Status</option>
-          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-        </select>
-      </div>
-
-      {/* Status summary chips */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-        {['all', ...STATUS_OPTIONS].map(s => {
-          const count = s === 'all' ? orders.length : orders.filter(o => o.status === s).length
-          const sColor = statusColor[s] || 'var(--accent-gold)'
-          return (
-            <button key={s} onClick={() => setFilterStatus(s)} style={{ padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, border: `1px solid ${filterStatus === s ? sColor : 'var(--glass-border)'}`, background: filterStatus === s ? `${sColor}15` : 'transparent', color: filterStatus === s ? sColor : 'var(--text-muted)', cursor: 'pointer' }}>
-              {s.charAt(0).toUpperCase() + s.slice(1)} ({count})
-            </button>
-          )
-        })}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 340px' : '1fr', gap: 16 }}>
@@ -64,7 +64,7 @@ export default function Orders() {
           <div style={{ overflowX: 'auto' }}>
             <table className="table-dark">
               <thead>
-                <tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Method</th><th>Due Date</th><th>Payment</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Method</th><th>Status</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {filtered.map(o => (
@@ -73,31 +73,25 @@ export default function Orders() {
                     <td style={{ fontWeight: 500 }}>{o.customerName}</td>
                     <td style={{ fontWeight: 600 }}>₹{o.total.toFixed(0)}</td>
                     <td><span className="badge-gold">{o.paymentMethod}</span></td>
-                    <td style={{ color: o.paymentMethod === 'Credit' ? '#f87171' : 'var(--text-muted)', fontSize: 12 }}>
-                      {o.dueDate ? format(new Date(o.dueDate), 'MMM d') : '-'}
-                    </td>
-                    <td>
-                      {o.paymentStatus === 'paid' ? (
-                        <span className="badge-success">Received</span>
-                      ) : (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); window.confirm('Mark this credit as received?') && updatePaymentStatus(o.id, 'paid') }}
-                          className="badge-warning" style={{ cursor: 'pointer' }}
-                        >
-                          Pending
-                        </button>
-                      )}
-                    </td>
                     <td>
                       <span className="badge" style={{ background: `${statusColor[o.status]}15`, color: statusColor[o.status], border: `1px solid ${statusColor[o.status]}25` }}>
                         {o.status}
                       </span>
                     </td>
                     <td onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <select value={o.status} onChange={e => handleStatus(o.id, e.target.value)}
-                        style={{ background: 'var(--input-bg)', border: '1px solid var(--glass-border)', color: 'var(--accent-gold)', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', outline: 'none' }}>
-                        {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      {o.status === 'pending' ? (
+                        <select value={o.status} onChange={e => {
+                          if (e.target.value === 'delivered') {
+                            setPaymentPromptOrder(o)
+                          }
+                        }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--glass-border)', color: 'var(--accent-gold)', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', outline: 'none' }}>
+                          <option value="pending">Pending</option>
+                          <option value="delivered">Delivered</option>
+                        </select>
+                      ) : (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Delivered</span>
+                      )}
                       <button 
                         onClick={() => window.confirm('Delete this order? This cannot be undone and stock will be restored.') && deleteOrder(o.id)}
                         style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 4, opacity: 0.7 }}
@@ -139,17 +133,80 @@ export default function Orders() {
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Update Status</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {STATUS_OPTIONS.map(s => (
-                  <button key={s} onClick={() => { handleStatus(selected.id, s); setSelected({ ...selected, status: s }) }}
-                    style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, border: `1px solid ${selected.status === s ? statusColor[s] : 'var(--glass-border)'}`, background: selected.status === s ? `${statusColor[s]}15` : 'transparent', color: selected.status === s ? statusColor[s] : 'var(--text-muted)', cursor: 'pointer' }}>
-                    {s}
-                  </button>
-                ))}
+                {selected.status === 'pending' ? (
+                  ['pending', 'delivered'].map(s => (
+                    <button key={s} onClick={() => {
+                      if (s === 'delivered') {
+                        setPaymentPromptOrder(selected)
+                      } else {
+                        handleStatus(selected.id, s); 
+                        setSelected({ ...selected, status: s })
+                      }
+                    }}
+                      style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, border: `1px solid ${selected.status === s ? statusColor[s] : 'var(--glass-border)'}`, background: selected.status === s ? `${statusColor[s]}15` : 'transparent', color: selected.status === s ? statusColor[s] : 'var(--text-muted)', cursor: 'pointer' }}>
+                      {s}
+                    </button>
+                  ))
+                ) : (
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#4ade80' }}>Delivered</span>
+                )}
               </div>
             </div>
           </motion.div>
         )}
       </div>
+
+      {/* Payment Selection Modal */}
+      {paymentPromptOrder && (
+        <div className="modal-overlay" style={{ zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)' }} onClick={() => setPaymentPromptOrder(null)}>
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            onClick={e => e.stopPropagation()}
+            style={{ 
+              background: 'var(--bg-dark)', 
+              border: '1px solid var(--glass-border)', 
+              borderRadius: 16, 
+              padding: 24, 
+              width: '90%', 
+              maxWidth: 400,
+              textAlign: 'center'
+            }}
+          >
+            <h3 style={{ fontFamily: 'Playfair Display', fontSize: 18, color: 'var(--text-main)', marginBottom: 8 }}>Select Payment Method</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
+              Choose the payment option to transition Order #{paymentPromptOrder.id.slice(-6).toUpperCase()} to Delivered:
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+              {[
+                { id: 'UPI', icon: Smartphone, label: 'UPI' },
+                { id: 'Card', icon: CreditCard, label: 'Card' },
+                { id: 'Cash', icon: Banknote, label: 'Cash' }
+              ].map(method => {
+                const Icon = method.icon
+                return (
+                  <button
+                    key={method.id}
+                    onClick={() => handleDeliverCredit(paymentPromptOrder.id, method.id)}
+                    className="btn-gold"
+                    style={{ padding: '16px 8px', borderRadius: 10, fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}
+                  >
+                    <Icon size={20} />
+                    {method.label}
+                  </button>
+                )
+              })}
+            </div>
+            <button 
+              onClick={() => setPaymentPromptOrder(null)} 
+              className="btn-dark" 
+              style={{ width: '100%', padding: '10px', borderRadius: 8, fontSize: 13, border: '1px solid var(--glass-border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

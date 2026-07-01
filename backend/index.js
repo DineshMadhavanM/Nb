@@ -8,6 +8,34 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
+// Helper to retry transient MongoDB selection timeout/network connection errors
+async function runWithRetry(fn, retries = 3, delayMs = 1500) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const msg = (error.message || '').toLowerCase();
+      const isTransient = 
+        msg.includes('timeout') ||
+        msg.includes('connection') ||
+        msg.includes('closed') ||
+        msg.includes('selection') ||
+        msg.includes('socket') ||
+        msg.includes('network') ||
+        msg.includes('primary') ||
+        error.code === 'P2010' ||
+        error.code === 'P2028';
+
+      if (isTransient && i < retries - 1) {
+        console.warn(`[Prisma Database Retry] Attempt ${i + 1}/${retries} failed. Retrying in ${delayMs}ms. Error: ${error.message}`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
@@ -19,7 +47,7 @@ app.get('/', (req, res) => {
 // --- Products Routes ---
 app.get('/api/products', async (req, res) => {
   try {
-    const products = await prisma.product.findMany();
+    const products = await runWithRetry(() => prisma.product.findMany());
     res.json(products);
   } catch (error) {
     console.error("GET Products Error:", error);
@@ -29,7 +57,7 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
-    const product = await prisma.product.create({ data: req.body });
+    const product = await runWithRetry(() => prisma.product.create({ data: req.body }));
     res.status(201).json(product);
   } catch (error) {
     console.error("POST Products Error:", error);
@@ -41,10 +69,10 @@ app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { id: _, createdAt, updatedAt, ...updateData } = req.body;
-    const product = await prisma.product.update({
+    const product = await runWithRetry(() => prisma.product.update({
       where: { id },
       data: updateData
-    });
+    }));
     res.json(product);
   } catch (error) {
     console.error("PUT Products Error:", error);
@@ -55,7 +83,7 @@ app.put('/api/products/:id', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await prisma.product.deleteMany({ where: { id } });
+    const deleted = await runWithRetry(() => prisma.product.deleteMany({ where: { id } }));
     if (deleted.count === 0) {
       return res.status(404).json({ error: "Product not found" });
     }
@@ -69,7 +97,7 @@ app.delete('/api/products/:id', async (req, res) => {
 // --- Category Routes ---
 app.get('/api/categories', async (req, res) => {
   try {
-    const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+    const categories = await runWithRetry(() => prisma.category.findMany({ orderBy: { name: 'asc' } }));
     res.json(categories);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -78,7 +106,7 @@ app.get('/api/categories', async (req, res) => {
 
 app.post('/api/categories', async (req, res) => {
   try {
-    const category = await prisma.category.create({ data: req.body });
+    const category = await runWithRetry(() => prisma.category.create({ data: req.body }));
     res.status(201).json(category);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -88,7 +116,7 @@ app.post('/api/categories', async (req, res) => {
 app.delete('/api/categories/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.category.delete({ where: { id } });
+    await runWithRetry(() => prisma.category.delete({ where: { id } }));
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -98,10 +126,10 @@ app.delete('/api/categories/:id', async (req, res) => {
 // --- Orders Routes ---
 app.get('/api/orders', async (req, res) => {
   try {
-    const orders = await prisma.order.findMany({
+    const orders = await runWithRetry(() => prisma.order.findMany({
       include: { items: true, Customer: true },
       orderBy: { createdAt: 'desc' }
-    });
+    }));
     res.json(orders);
   } catch (error) {
     console.error("GET Orders Error:", error);
@@ -115,8 +143,8 @@ app.post('/api/orders', async (req, res) => {
     
     const payStatus = paymentMethod === 'Credit' ? 'unpaid' : 'paid';
 
-    // Create order with items in a transaction
-    const order = await prisma.$transaction(async (tx) => {
+    // Create order with items in a transaction (wrapped in runWithRetry)
+    const order = await runWithRetry(() => prisma.$transaction(async (tx) => {
       let finalCustomerId = customerId;
 
       // Automatically create or find customer if phone is provided but no ID
@@ -153,7 +181,8 @@ app.post('/api/orders', async (req, res) => {
           paymentMethod,
           dueDate: dueDate ? new Date(dueDate) : null,
           paymentStatus: payStatus,
-          status: 'pending',
+          status: paymentMethod === 'Credit' ? 'pending' : 'delivered',
+          paidAt: paymentMethod === 'Credit' ? null : new Date(),
           items: {
             create: items.map(item => ({
               productId: item.productId,
@@ -194,7 +223,7 @@ app.post('/api/orders', async (req, res) => {
       });
 
       return newOrder;
-    });
+    }));
 
     res.status(201).json(order);
   } catch (error) {
@@ -205,11 +234,16 @@ app.post('/api/orders', async (req, res) => {
 app.patch('/api/orders/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
-    const order = await prisma.order.update({
+    const { status, paymentMethod, paymentStatus } = req.body;
+    const updateData = { status };
+    if (paymentMethod) updateData.paymentMethod = paymentMethod;
+    if (paymentStatus) updateData.paymentStatus = paymentStatus;
+    if (status === 'delivered') updateData.paidAt = new Date();
+
+    const order = await runWithRetry(() => prisma.order.update({
       where: { id },
-      data: { status }
-    });
+      data: updateData
+    }));
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -220,10 +254,10 @@ app.patch('/api/orders/:id/payment', async (req, res) => {
   try {
     const { id } = req.params;
     const { paymentStatus } = req.body;
-    const order = await prisma.order.update({
+    const order = await runWithRetry(() => prisma.order.update({
       where: { id },
       data: { paymentStatus }
-    });
+    }));
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -235,16 +269,16 @@ app.delete('/api/orders/:id', async (req, res) => {
     const { id } = req.params;
 
     // Fetch order first to get details for stock restoration and customer update
-    const order = await prisma.order.findUnique({
+    const order = await runWithRetry(() => prisma.order.findUnique({
       where: { id },
       include: { items: true }
-    });
+    }));
 
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await runWithRetry(() => prisma.$transaction(async (tx) => {
       // 1. Restore product stock
       for (const item of order.items) {
         if (item.productId) {
@@ -276,7 +310,7 @@ app.delete('/api/orders/:id', async (req, res) => {
       await tx.order.delete({ where: { id } });
     }, {
       timeout: 30000 // 30 seconds timeout
-    });
+    }));
 
     res.status(204).send();
   } catch (error) {
@@ -288,9 +322,9 @@ app.delete('/api/orders/:id', async (req, res) => {
 // --- Customers Routes ---
 app.get('/api/customers', async (req, res) => {
   try {
-    const customers = await prisma.customer.findMany({
+    const customers = await runWithRetry(() => prisma.customer.findMany({
       include: { Orders: true }
-    });
+    }));
     res.json(customers);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -299,7 +333,7 @@ app.get('/api/customers', async (req, res) => {
 
 app.post('/api/customers', async (req, res) => {
   try {
-    const customer = await prisma.customer.create({ data: req.body });
+    const customer = await runWithRetry(() => prisma.customer.create({ data: req.body }));
     res.status(201).json(customer);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -312,21 +346,24 @@ app.get('/api/analytics/dashboard', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todayOrders = await prisma.order.findMany({
+    const todayCreatedOrders = await runWithRetry(() => prisma.order.findMany({
       where: { createdAt: { gte: today } }
-    });
+    }));
 
-    const todayRevenue = todayOrders
-      .filter(o => o.paymentStatus === 'paid')
+    const todayPaidOrders = await runWithRetry(() => prisma.order.findMany({
+      where: { paidAt: { gte: today } }
+    }));
+
+    const todayRevenue = todayPaidOrders
       .reduce((sum, o) => sum + o.total, 0);
 
-    const todayDiscounts = todayOrders
+    const todayDiscounts = todayCreatedOrders
       .reduce((sum, o) => sum + (o.discount || 0), 0);
 
-    const allOrders = await prisma.order.findMany({ select: { discount: true } });
+    const allOrders = await runWithRetry(() => prisma.order.findMany({ select: { discount: true } }));
     const totalDiscounts = allOrders.reduce((sum, o) => sum + (o.discount || 0), 0);
     
-    const totalOrdersCount = await prisma.order.count();
+    const totalOrdersCount = await runWithRetry(() => prisma.order.count());
     
     // Simplified AI Sales Prediction (Mocked logic for demo)
     const predictions = [
@@ -341,7 +378,7 @@ app.get('/api/analytics/dashboard', async (req, res) => {
 
     res.json({
       todayRevenue,
-      todayOrders: todayOrders.length,
+      todayOrders: todayCreatedOrders.length,
       todayDiscounts,
       totalDiscounts,
       totalOrdersCount,

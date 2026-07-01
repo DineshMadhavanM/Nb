@@ -8,19 +8,19 @@ import toast from 'react-hot-toast'
 
 function CheckoutModal({ onClose }) {
   const { cart, selectedCustomer, getSubtotal, getGST, getDiscountAmount, getTotal, discount, setDiscount, discountType, setDiscountType, clearCart, setSelectedCustomer } = useCart()
-  const { addOrder, customers } = useApp()
+  const { addOrder, addCustomer, customers } = useApp()
   const [payMethod, setPayMethod] = useState('UPI')
   const [step, setStep] = useState('review') // review | success
-  const [custSearch, setCustSearch] = useState('')
-  const [dueDateType, setDueDateType] = useState('today') // today | tomorrow | custom
+  const [dueDateType, setDueDateType] = useState('today')
   const [customDays, setCustomDays] = useState('7')
-
   const [newCustName, setNewCustName] = useState('')
   const [newCustPhone, setNewCustPhone] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
-  const filteredCusts = customers.filter(c =>
-    c.name.toLowerCase().includes(custSearch.toLowerCase()) || c.phone.includes(custSearch)
-  ).slice(0, 4)
+  const nameSuggestions = newCustName.trim()
+    ? customers.filter(c => c.name.toLowerCase().includes(newCustName.toLowerCase())).slice(0, 5)
+    : []
+  const matchedCustomer = customers.find(c => c.name.toLowerCase() === newCustName.toLowerCase())
 
   const getDueDate = () => {
     if (payMethod !== 'Credit') return null
@@ -30,11 +30,23 @@ function CheckoutModal({ onClose }) {
     return date.toISOString()
   }
 
-  const handlePay = () => {
+  const creditMissingInfo = payMethod === 'Credit' && (!newCustName.trim() || !newCustPhone.trim())
+
+  const handlePay = async () => {
+    if (creditMissingInfo) {
+      toast.error('Customer name and phone are required for Credit orders')
+      return
+    }
+    // Save as new customer if name doesn't already exist
+    let customerId = matchedCustomer?.id || null
+    if (newCustName.trim() && !matchedCustomer) {
+      const saved = await addCustomer({ name: newCustName.trim(), phone: newCustPhone.trim() })
+      customerId = saved?.id || null
+    }
     const order = {
-      customerId: selectedCustomer?.id || null,
-      customerName: selectedCustomer?.name || newCustName || 'Walk-in Customer',
-      customerPhone: selectedCustomer?.phone || newCustPhone || '',
+      customerId,
+      customerName: newCustName.trim() || 'Walk-in Customer',
+      customerPhone: newCustPhone.trim() || '',
       items: cart.map(i => ({ 
         productId: i.productId, 
         name: i.name, 
@@ -75,42 +87,61 @@ function CheckoutModal({ onClose }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
         </div>
 
-        {/* Customer Select */}
+        {/* Customer */}
         <div style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer</div>
-          {selectedCustomer ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(140, 184, 116, 0.08)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--glass-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <User size={14} color="var(--accent-gold)" />
-                <span style={{ color: 'var(--text-main)', fontSize: 13, fontWeight: 500 }}>{selectedCustomer.name}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{selectedCustomer.phone}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {/* Name with autocomplete */}
+            <div style={{ position: 'relative' }}>
+              <div style={{ fontSize: 10, marginBottom: 4, textTransform: 'uppercase', color: payMethod === 'Credit' ? '#f87171' : 'var(--text-muted)' }}>
+                Name{payMethod === 'Credit' ? ' *' : ' (opt)'}
               </div>
-              <button onClick={() => setSelectedCustomer(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>✕</button>
-            </div>
-          ) : (
-            <div>
-              <input className="input-dark" value={custSearch} onChange={e => setCustSearch(e.target.value)} placeholder="Search customer or walk-in..." style={{ marginBottom: 12 }} />
-              
-              {!custSearch && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
-                  <div>
-                    <div style={{ fontSize: 10, color: 'var(--accent-gold)', marginBottom: 4, textTransform: 'uppercase' }}>New Customer (Opt)</div>
-                    <input className="input-dark" value={newCustName} onChange={e => setNewCustName(e.target.value)} placeholder="Name" style={{ fontSize: 12, height: 38 }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: 'var(--accent-gold)', marginBottom: 4, textTransform: 'uppercase' }}>Phone No (Opt)</div>
-                    <input className="input-dark" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)} placeholder="Phone" style={{ fontSize: 12, height: 38 }} />
-                  </div>
+              <input
+                className="input-dark"
+                value={newCustName}
+                onChange={e => { setNewCustName(e.target.value); setNewCustPhone(''); setShowSuggestions(true) }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                placeholder="Name"
+                autoComplete="off"
+                style={{
+                  fontSize: 12, height: 38,
+                  border: payMethod === 'Credit' && !newCustName.trim() ? '1px solid #f87171' : undefined
+                }}
+              />
+              {showSuggestions && nameSuggestions.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', borderRadius: 8, marginTop: 2, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                  {nameSuggestions.map(c => (
+                    <div
+                      key={c.id}
+                      onMouseDown={() => { setNewCustName(c.name); setNewCustPhone(c.phone); setShowSuggestions(false) }}
+                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text-main)', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <User size={12} color="var(--accent-gold)" />
+                      <span style={{ fontWeight: 500 }}>{c.name}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>{c.phone}</span>
+                    </div>
+                  ))}
                 </div>
               )}
-
-              {custSearch && filteredCusts.map(c => (
-                <div key={c.id} onClick={() => { setSelectedCustomer(c); setCustSearch(''); setNewCustName(''); setNewCustPhone('') }} style={{ padding: '9px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text-main)', borderBottom: '1px solid var(--glass-border)' }}>
-                  {c.name} <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{c.phone}</span>
-                </div>
-              ))}
             </div>
-          )}
+            {/* Phone */}
+            <div>
+              <div style={{ fontSize: 10, marginBottom: 4, textTransform: 'uppercase', color: payMethod === 'Credit' ? '#f87171' : 'var(--text-muted)' }}>
+                Phone{payMethod === 'Credit' ? ' *' : ' (opt)'}
+              </div>
+              <input
+                className="input-dark"
+                value={newCustPhone}
+                onChange={e => setNewCustPhone(e.target.value)}
+                placeholder="Phone"
+                style={{
+                  fontSize: 12, height: 38,
+                  border: payMethod === 'Credit' && !newCustPhone.trim() ? '1px solid #f87171' : undefined
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Payment Method */}
@@ -132,25 +163,6 @@ function CheckoutModal({ onClose }) {
         </div>
 
         {/* Credit Options */}
-        {payMethod === 'Credit' && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} style={{ background: 'rgba(140, 184, 116, 0.05)', borderRadius: 12, padding: 14, marginBottom: 18, border: '1px dashed var(--accent-gold)' }}>
-            <div style={{ fontSize: 12, color: 'var(--accent-gold)', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase' }}>Payment Due Date</div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              {['today', 'tomorrow', 'custom'].map(type => (
-                <button key={type} onClick={() => setDueDateType(type)} style={{ flex: 1, padding: '8px', borderRadius: 8, fontSize: 12, border: `1px solid ${dueDateType === type ? 'var(--accent-gold)' : 'var(--glass-border)'}`, background: dueDateType === type ? 'var(--accent-gold)' : 'transparent', color: dueDateType === type ? '#0F170B' : 'var(--text-muted)', cursor: 'pointer', textTransform: 'capitalize' }}>
-                  {type}
-                </button>
-              ))}
-            </div>
-            {dueDateType === 'custom' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Pay within</span>
-                <input type="number" value={customDays} onChange={e => setCustomDays(e.target.value)} style={{ width: 60, background: 'rgba(255,255,255,0.1)', border: '1px solid var(--glass-border)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-main)', textAlign: 'center' }} />
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>days</span>
-              </div>
-            )}
-          </motion.div>
-        )}
 
         {/* Order Summary */}
         <div style={{ background: 'rgba(15, 23, 11, 0.5)', borderRadius: 10, padding: '14px', marginBottom: 18, border: '1px solid var(--glass-border)' }}>
@@ -204,8 +216,15 @@ function CheckoutModal({ onClose }) {
           </div>
         </div>
 
-        <button onClick={handlePay} className="btn-gold" style={{ width: '100%', padding: '14px', borderRadius: 10, fontSize: 15 }}>
-          {payMethod === 'Credit' ? 'Record Credit Order' : `Confirm Payment · ₹${getTotal().toFixed(2)}`}
+        <button
+          onClick={handlePay}
+          disabled={creditMissingInfo}
+          className="btn-gold"
+          style={{ width: '100%', padding: '14px', borderRadius: 10, fontSize: 15, opacity: creditMissingInfo ? 0.45 : 1, cursor: creditMissingInfo ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
+        >
+          {payMethod === 'Credit'
+            ? creditMissingInfo ? 'Enter customer details to continue' : 'Record Credit Order'
+            : `Confirm Payment · ₹${getTotal().toFixed(2)}`}
         </button>
       </motion.div>
     </div>
@@ -214,7 +233,7 @@ function CheckoutModal({ onClose }) {
 
 export default function POS() {
   const { products, categories } = useApp()
-  const { cart, addToCart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount } = useCart()
+  const { cart, addToCart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount, clearCart } = useCart()
   const [category, setCategory] = useState('All')
   const [search, setSearch] = useState('')
   const [checkout, setCheckout] = useState(false)
@@ -229,7 +248,7 @@ export default function POS() {
         <div style={{ overflowY: 'auto', paddingRight: 4 }}>
           <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h1 style={{ fontFamily: 'Playfair Display', fontSize: 26, color: 'var(--text-main)', fontWeight: 700, marginBottom: 4 }}>POS Billing</h1>
+              <h1 style={{ fontFamily: 'Playfair Display', fontSize: 26, color: 'var(--text-main)', fontWeight: 700, marginBottom: 4 }}>New Billing +</h1>
               <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Artisan Bakery Selection</p>
             </div>
           </div>
@@ -279,7 +298,6 @@ export default function POS() {
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>{p.category}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontFamily: 'Playfair Display', fontSize: 17, color: 'var(--accent-gold)', fontWeight: 800 }}>₹{p.price}</div>
-                    <div style={{ fontSize: 10, color: p.stock < 5 ? '#f87171' : 'rgba(241, 248, 233, 0.3)' }}>{p.stock} left</div>
                   </div>
                 </motion.div>
               )
@@ -293,6 +311,7 @@ export default function POS() {
             cart={cart} removeFromCart={removeFromCart} updateQty={updateQty} 
             getSubtotal={getSubtotal} getGST={getGST} getTotal={getTotal} 
             getItemCount={getItemCount} onCheckout={() => setCheckout(true)} 
+            clearCart={clearCart}
           />
         </div>
       </div>
@@ -334,6 +353,7 @@ export default function POS() {
                   cart={cart} removeFromCart={removeFromCart} updateQty={updateQty} 
                   getSubtotal={getSubtotal} getGST={getGST} getTotal={getTotal} 
                   getItemCount={getItemCount} onCheckout={() => { setShowMobileCart(false); setCheckout(true) }} 
+                  clearCart={clearCart}
                 />
               </div>
             </motion.div>
@@ -360,13 +380,34 @@ export default function POS() {
   )
 }
 
-function CartContent({ cart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount, onCheckout }) {
+function CartContent({ cart, removeFromCart, updateQty, getSubtotal, getGST, getTotal, getItemCount, onCheckout, clearCart }) {
   return (
     <>
       <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: 8 }}>
         <ShoppingCart size={18} color="var(--accent-gold)" />
         <span style={{ fontFamily: 'Playfair Display', fontSize: 18, color: 'var(--text-main)', fontWeight: 600 }}>Cart</span>
         {getItemCount() > 0 && <span style={{ marginLeft: 'auto', background: 'var(--accent-gold)', color: 'white', borderRadius: 999, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>{getItemCount()}</span>}
+        {cart.length > 0 && (
+          <button
+            onClick={clearCart}
+            title="Clear entire cart"
+            style={{
+              background: 'rgba(248, 113, 113, 0.1)',
+              border: '1px solid rgba(248, 113, 113, 0.2)',
+              color: '#f87171',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 4,
+              borderRadius: 6,
+              transition: 'all 0.2s',
+              marginLeft: 4
+            }}
+          >
+            <X size={15} />
+          </button>
+        )}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>

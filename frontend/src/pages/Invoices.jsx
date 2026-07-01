@@ -127,13 +127,13 @@ export default function Invoices() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, marginBottom: 22 }}>
         {[
-          { label: 'Total Invoices', value: invoiceOrders.length, color: 'var(--accent-gold)' },
-          { label: 'Total Revenue', value: `₹${invoiceOrders.reduce((s, o) => s + o.total, 0).toFixed(0)}`, color: '#8CB874' },
-          { label: 'Total GST', value: `₹${invoiceOrders.reduce((s, o) => s + (o.gst || 0), 0).toFixed(0)}`, color: '#60a5fa' },
+          { label: 'Total Invoices', value: invoiceOrders.length, color: '#A07812' },
+          { label: 'Total Revenue', value: `₹${invoiceOrders.reduce((s, o) => s + o.total, 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: '#2E7D32' },
+          { label: 'Total GST', value: `₹${invoiceOrders.reduce((s, o) => s + (o.gst || 0), 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: '#1565C0' },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{ background: 'rgba(15, 23, 11, 0.5)', borderRadius: 12, padding: '16px 18px', border: '1px solid var(--glass-border)' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
-            <div style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color }}>{value}</div>
+          <div key={label} style={{ background: '#ffffff', borderRadius: 12, padding: '16px 18px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 11, color: '#555555', fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
+            <div style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 800, color }}>{value}</div>
           </div>
         ))}
       </div>

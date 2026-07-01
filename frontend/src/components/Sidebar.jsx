@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext'
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/pos', icon: ShoppingCart, label: 'POS Billing' },
+  { path: '/pos', icon: ShoppingCart, label: 'New Billing +' },
   { path: '/orders', icon: ClipboardList, label: 'Orders' },
   { path: '/invoices', icon: FileText, label: 'Invoices' },
   { path: '/stock', icon: Package, label: 'Stock' },
