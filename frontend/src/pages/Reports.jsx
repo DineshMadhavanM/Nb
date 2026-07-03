@@ -6,7 +6,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
-import { format, subDays, eachDayOfInterval, isSameDay } from 'date-fns'
+import { format, subDays, eachDayOfInterval, isSameDay, startOfMonth } from 'date-fns'
 
 /* ── Flutter-style Tooltip ── */
 const CustomTooltip = ({ active, payload, label }) => {
@@ -74,6 +74,7 @@ export default function Reports() {
   const { orders, products, getTodayRevenue, getMonthlyRevenue } = useApp()
   const [period, setPeriod] = useState('7D')
   const [activeTab, setActiveTab] = useState('overview')
+  const [paymentMode, setPaymentMode] = useState('today')
 
   /* ── Chart Data ── */
   const chartData = useMemo(() => {
@@ -130,6 +131,7 @@ export default function Reports() {
 
   /* ── Payment Stats ── */
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+  const monthStart = startOfMonth(new Date())
   const PAY_METHODS = ['UPI', 'Card', 'Cash', 'Credit']
   const PAY_COLORS  = { UPI: '#8CB874', Card: '#60a5fa', Cash: '#f59e0b', Credit: '#f87171' }
   const PAY_BG      = { UPI: 'rgba(140,184,116,0.12)', Card: 'rgba(96,165,250,0.12)', Cash: 'rgba(245,158,11,0.12)', Credit: 'rgba(248,113,113,0.12)' }
@@ -138,9 +140,15 @@ export default function Reports() {
   const todayPaid   = orders.filter(o => { const d = o.paidAt ? new Date(o.paidAt) : new Date(o.createdAt); return d >= todayStart && o.paymentStatus === 'paid' && o.status !== 'cancelled' })
   const todayCredit = orders.filter(o => { const d = new Date(o.createdAt); return d >= todayStart && o.paymentMethod === 'Credit' && o.status !== 'cancelled' })
 
+  const monthPaid   = orders.filter(o => { const d = o.paidAt ? new Date(o.paidAt) : new Date(o.createdAt); return d >= monthStart && o.paymentStatus === 'paid' && o.status !== 'cancelled' })
+  const monthCredit = orders.filter(o => { const d = new Date(o.createdAt); return d >= monthStart && o.paymentMethod === 'Credit' && o.status !== 'cancelled' })
+
+  const targetPaid   = paymentMode === 'today' ? todayPaid : monthPaid
+  const targetCredit = paymentMode === 'today' ? todayCredit : monthCredit
+
   const payStats = PAY_METHODS.map(method => {
-    if (method === 'Credit') return { method, count: todayCredit.length, revenue: todayCredit.reduce((s, o) => s + o.total, 0), isPending: true }
-    const m = todayPaid.filter(o => o.paymentMethod === method)
+    if (method === 'Credit') return { method, count: targetCredit.length, revenue: targetCredit.reduce((s, o) => s + o.total, 0), isPending: true }
+    const m = targetPaid.filter(o => o.paymentMethod === method)
     return { method, count: m.length, revenue: m.reduce((s, o) => s + o.total, 0), isPending: false }
   })
 
@@ -301,22 +309,45 @@ export default function Reports() {
           <motion.div key="payments" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
 
             {/* Today Revenue Summary */}
+            {/* Today/Monthly Revenue Toggle Cards */}
             <FCard delay={0} style={{ marginBottom: 14 }}>
-              <div style={{ padding: '18px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
-                <div style={{ paddingRight: 16, borderRight: '1px solid var(--glass-border)' }}>
+              <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div 
+                  onClick={() => setPaymentMode('today')}
+                  style={{ 
+                    padding: '12px 14px', 
+                    borderRadius: 14, 
+                    cursor: 'pointer',
+                    transition: 'all 0.22s ease',
+                    background: paymentMode === 'today' ? 'rgba(104, 159, 56, 0.08)' : 'transparent',
+                    border: `1.5px solid ${paymentMode === 'today' ? 'var(--accent-gold)' : 'var(--glass-border)'}`,
+                    boxShadow: paymentMode === 'today' ? '0 4px 12px rgba(104,159,56,0.06)' : 'none'
+                  }}
+                >
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Today's Revenue</div>
-                  <div style={{ fontFamily: 'Playfair Display', fontSize: 26, fontWeight: 900, color: 'var(--accent-gold)' }}>₹{todayRevenue.toLocaleString('en-IN')}</div>
+                  <div style={{ fontFamily: 'Playfair Display', fontSize: 24, fontWeight: 900, color: 'var(--accent-gold)' }}>₹{todayRevenue.toLocaleString('en-IN')}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
                     <ArrowUpRight size={12} color="#8CB874" />
-                    <span style={{ fontSize: 11, color: '#8CB874', fontWeight: 600 }}>Collected</span>
+                    <span style={{ fontSize: 11, color: '#8CB874', fontWeight: 600 }}>Show Today</span>
                   </div>
                 </div>
-                <div style={{ paddingLeft: 16 }}>
+                <div 
+                  onClick={() => setPaymentMode('month')}
+                  style={{ 
+                    padding: '12px 14px', 
+                    borderRadius: 14, 
+                    cursor: 'pointer',
+                    transition: 'all 0.22s ease',
+                    background: paymentMode === 'month' ? 'rgba(104, 159, 56, 0.08)' : 'transparent',
+                    border: `1.5px solid ${paymentMode === 'month' ? 'var(--accent-gold)' : 'var(--glass-border)'}`,
+                    boxShadow: paymentMode === 'month' ? '0 4px 12px rgba(104,159,56,0.06)' : 'none'
+                  }}
+                >
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Monthly Revenue</div>
-                  <div style={{ fontFamily: 'Playfair Display', fontSize: 26, fontWeight: 900, color: '#60a5fa' }}>₹{monthlyRevenue.toLocaleString('en-IN')}</div>
+                  <div style={{ fontFamily: 'Playfair Display', fontSize: 24, fontWeight: 900, color: '#60a5fa' }}>₹{monthlyRevenue.toLocaleString('en-IN')}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
                     <ArrowUpRight size={12} color="#60a5fa" />
-                    <span style={{ fontSize: 11, color: '#60a5fa', fontWeight: 600 }}>This month</span>
+                    <span style={{ fontSize: 11, color: '#60a5fa', fontWeight: 600 }}>Show Month</span>
                   </div>
                 </div>
               </div>
@@ -324,7 +355,12 @@ export default function Reports() {
 
             {/* Payment Method Cards */}
             <FCard delay={0.06} style={{ marginBottom: 14 }}>
-              <SectionHeader title="Today's Payment Breakdown" subtitle="Per payment method" icon={CreditCard} color="var(--accent-gold)" />
+              <SectionHeader 
+                title={paymentMode === 'today' ? "Today's Payment Breakdown" : "Month's Payment Breakdown"} 
+                subtitle={paymentMode === 'today' ? "Per payment method" : "Per payment method (This month)"} 
+                icon={CreditCard} 
+                color="var(--accent-gold)" 
+              />
               <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {payStats.map(({ method, count, revenue, isPending }, i) => (
                   <motion.div key={method} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 + 0.15 }}
@@ -338,7 +374,7 @@ export default function Reports() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2 }}>{method}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
-                        {count} payment{count !== 1 ? 's' : ''} today
+                        {count} payment{count !== 1 ? 's' : ''} {paymentMode === 'today' ? 'today' : 'this month'}
                       </div>
                     </div>
                     {/* Amount */}
@@ -363,7 +399,7 @@ export default function Reports() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#f87171', marginBottom: 2 }}>Credit Pending Collection</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      ₹{payStats.find(p => p.method === 'Credit')?.revenue.toLocaleString('en-IN')} owed today. Mark orders as Delivered to collect.
+                      ₹{payStats.find(p => p.method === 'Credit')?.revenue.toLocaleString('en-IN')} owed {paymentMode === 'today' ? 'today' : 'this month'}. Mark orders as Delivered to collect.
                     </div>
                   </div>
                 </div>
