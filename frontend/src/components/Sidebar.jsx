@@ -11,7 +11,7 @@ const navItems = [
   { path: '/pos', icon: ShoppingCart, label: 'New Billing +' },
   { path: '/orders', icon: ClipboardList, label: 'Orders' },
   { path: '/invoices', icon: FileText, label: 'Invoices' },
-  { path: '/stock', icon: Package, label: 'Stock' },
+  { path: '/stock', icon: Package, label: 'Add Menu +' },
   { path: '/categories', icon: Tag, label: 'Categories' },
   { path: '/customers', icon: Users, label: 'Customers' },
   { path: '/reports', icon: BarChart3, label: 'Reports' },

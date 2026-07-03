@@ -110,7 +110,7 @@ export default function Stock() {
     <div style={{ position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontFamily: 'Playfair Display', fontSize: 28, color: 'var(--text-main)', fontWeight: 700, marginBottom: 4 }}>Stock Management</h1>
+          <h1 style={{ fontFamily: 'Playfair Display', fontSize: 28, color: 'var(--text-main)', fontWeight: 700, marginBottom: 4 }}>Add Menu +</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Track and manage product inventory</p>
         </div>
         <button onClick={() => setModal('add')} className="btn-gold desktop-only" style={{ padding: '10px 20px', borderRadius: 10, fontSize: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
