@@ -99,6 +99,7 @@ function ShareDropdown({ order, invoiceNum, onClose }) {
 /* ── Invoice Preview Modal ── */
 function InvoicePreviewModal({ order, onClose }) {
   const invoiceNum = `INV-${order.id.replace('ORD-', '')}`
+  const shortNum   = invoiceNum.slice(0, 14) + '…'
   const [showShare, setShowShare] = useState(false)
   const handlePrint = () => window.print()
 
@@ -110,132 +111,126 @@ function InvoicePreviewModal({ order, onClose }) {
         exit={{ opacity: 0, scale: 0.94, y: 20 }}
         style={{
           background: 'var(--bg-dark)', border: '1px solid var(--glass-border)',
-          borderRadius: 24, width: '92%', maxWidth: 520, maxHeight: '92vh',
+          borderRadius: 20, width: '96%', maxWidth: 480, maxHeight: '94vh',
           overflowY: 'auto', padding: 0, boxShadow: '0 24px 64px rgba(0,0,0,0.35)'
         }}
       >
-        {/* ── Modal Toolbar ── */}
+        {/* ── Toolbar ── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 18px', borderBottom: '1px solid var(--glass-border)',
-          background: 'rgba(140,184,116,0.04)'
+          padding: '12px 14px', borderBottom: '1px solid var(--glass-border)',
+          background: 'rgba(140,184,116,0.04)', gap: 8
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(140,184,116,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Receipt size={15} color="#8CB874" />
+          {/* Left: icon + short INV */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, flex: 1 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(140,184,116,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Receipt size={13} color="#8CB874" />
             </div>
-            <span style={{ fontSize: 13, color: 'var(--accent-light)', fontWeight: 700, fontFamily: 'monospace' }}>{invoiceNum}</span>
+            <span style={{ fontSize: 11, color: 'var(--accent-light)', fontWeight: 700, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {shortNum}
+            </span>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {/* Print */}
+          {/* Right: Print / Share / Close */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
             <button onClick={handlePrint} style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px',
-              borderRadius: 10, background: 'rgba(140,184,116,0.1)',
+              display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+              borderRadius: 9, background: 'rgba(140,184,116,0.1)',
               border: '1px solid rgba(140,184,116,0.3)', color: 'var(--accent-gold)',
-              cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.2s'
+              cursor: 'pointer', fontSize: 11, fontWeight: 600
             }}>
-              <Printer size={13} /> Print
+              <Printer size={12} /> Print
             </button>
-            {/* Share */}
             <div style={{ position: 'relative' }}>
               <button onClick={() => setShowShare(s => !s)} style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px',
-                borderRadius: 10, background: 'rgba(96,165,250,0.1)',
+                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+                borderRadius: 9, background: 'rgba(96,165,250,0.1)',
                 border: '1px solid rgba(96,165,250,0.3)', color: '#60a5fa',
-                cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.2s'
+                cursor: 'pointer', fontSize: 11, fontWeight: 600
               }}>
-                <Share2 size={13} /> Share
+                <Share2 size={12} /> Share
               </button>
               <AnimatePresence>
-                {showShare && (
-                  <ShareDropdown order={order} invoiceNum={invoiceNum} onClose={() => setShowShare(false)} />
-                )}
+                {showShare && <ShareDropdown order={order} invoiceNum={invoiceNum} onClose={() => setShowShare(false)} />}
               </AnimatePresence>
             </div>
-            {/* Close */}
             <button onClick={onClose} style={{
-              width: 32, height: 32, borderRadius: 10, background: 'rgba(248,113,113,0.1)',
+              width: 28, height: 28, borderRadius: 8, background: 'rgba(248,113,113,0.1)',
               border: '1px solid rgba(248,113,113,0.2)', color: '#f87171',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <X size={15} />
+              <X size={13} />
             </button>
           </div>
         </div>
 
         {/* ── Invoice Body ── */}
-        <div id="invoice-print" style={{ padding: '26px 28px', background: '#F9FAF8', color: '#0F170B' }}>
+        <div id="invoice-print" style={{ padding: '18px 16px', background: '#F9FAF8', color: '#0F170B' }}>
+
           {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-            <div>
-              <div style={{ fontFamily: 'Playfair Display', fontSize: 26, fontWeight: 800, color: '#0F170B', lineHeight: 1 }}>Nineteen06</div>
-              <div style={{ fontSize: 10, color: '#8CB874', letterSpacing: '2.5px', textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>Artisan Bakery</div>
-              <div style={{ fontSize: 11, color: '#4A6B3A', marginTop: 8, lineHeight: 1.7 }}>
-                No. 19, Bakery Street, Chennai<br />
-                GST: 33ABCDE1234F1Z5<br />
-                +91 98765 43210
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 800, color: '#0F170B', lineHeight: 1 }}>Nineteen06</div>
+                <div style={{ fontSize: 9, color: '#8CB874', letterSpacing: '2px', textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>Artisan Bakery</div>
               </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#8CB874', fontFamily: 'Playfair Display', letterSpacing: 1 }}>INVOICE</div>
-              <div style={{ fontSize: 11, color: '#4A6B3A', marginTop: 8, lineHeight: 1.8 }}>
-                <b>Invoice #:</b> {invoiceNum}<br />
-                <b style={{ color: '#8CB874' }}>Date:</b> {format(new Date(order.createdAt), 'dd MMM yyyy')}
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#8CB874', fontFamily: 'Playfair Display', letterSpacing: 1 }}>INVOICE</div>
+                <div style={{ fontSize: 10, color: '#4A6B3A', lineHeight: 1.8, marginTop: 4 }}>
+                  <div><b>Invoice:</b> <span style={{ fontFamily: 'monospace', fontSize: 9 }}>{invoiceNum.slice(0, 18)}…</span></div>
+                  <div><b style={{ color: '#8CB874' }}>Date:</b> {format(new Date(order.createdAt), 'dd MMM yyyy')}</div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Bill To */}
-          <div style={{ background: 'linear-gradient(135deg, #F1F8E9, #E8F5E9)', borderRadius: 12, padding: '12px 16px', marginBottom: 18, border: '1px solid #C8E6C9' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#8CB874', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 5 }}>Bill To</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#0F170B' }}>{order.customerName}</div>
-            <div style={{ fontSize: 11, color: '#4A6B3A', marginTop: 2 }}>Payment: <b>{order.paymentMethod}</b></div>
+          <div style={{ background: 'linear-gradient(135deg,#F1F8E9,#E8F5E9)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, border: '1px solid #C8E6C9' }}>
+            <div style={{ fontSize: 8, fontWeight: 800, color: '#8CB874', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Bill To</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#0F170B' }}>{order.customerName}</div>
+            <div style={{ fontSize: 10, color: '#4A6B3A', marginTop: 2 }}>Payment: <b>{order.paymentMethod}</b></div>
           </div>
 
-          {/* Items Table */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 18, borderRadius: 10, overflow: 'hidden' }}>
-            <thead>
-              <tr style={{ background: '#1B2E15' }}>
-                {['#', 'Item', 'Qty', 'Rate', 'GST%', 'Amount'].map((h, i) => (
-                  <th key={h} style={{ padding: '9px 10px', color: '#AED581', fontSize: 10, fontWeight: 700, textAlign: i === 0 || i === 1 ? 'left' : i === 2 ? 'center' : 'right', letterSpacing: 0.5 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {order.items.map((item, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #E8F5E9', background: i % 2 === 0 ? '#FAFFF8' : '#F4FBF0' }}>
-                  <td style={{ padding: '9px 10px', fontSize: 11, color: '#4A6B3A', fontWeight: 600 }}>{i + 1}</td>
-                  <td style={{ padding: '9px 10px', fontSize: 12, color: '#0F170B', fontWeight: 600 }}>{item.name}</td>
-                  <td style={{ padding: '9px 10px', fontSize: 11, color: '#4A6B3A', textAlign: 'center' }}>{item.qty}</td>
-                  <td style={{ padding: '9px 10px', fontSize: 11, color: '#4A6B3A', textAlign: 'right' }}>₹{item.price}</td>
-                  <td style={{ padding: '9px 10px', fontSize: 11, color: '#4A6B3A', textAlign: 'right' }}>{item.gstRate}%</td>
-                  <td style={{ padding: '9px 10px', fontSize: 12, color: '#0F170B', fontWeight: 700, textAlign: 'right' }}>₹{(item.price * item.qty).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Totals */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <div style={{ width: 220, background: '#F1F8E9', borderRadius: 10, padding: '12px 14px', border: '1px solid #C8E6C9' }}>
-              {[
-                { label: 'Subtotal', value: `₹${order.subtotal?.toFixed(2)}` },
-                { label: 'CGST (2.5%)', value: `₹${(order.gst / 2).toFixed(2)}` },
-                { label: 'SGST (2.5%)', value: `₹${(order.gst / 2).toFixed(2)}` },
-                order.discount > 0 && { label: `Discount (${order.discount}%)`, value: `-₹${(order.subtotal * order.discount / 100).toFixed(2)}` },
-              ].filter(Boolean).map(({ label, value }) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#4A6B3A', marginBottom: 5 }}>
-                  <span>{label}</span><span style={{ fontWeight: 600 }}>{value}</span>
-                </div>
-              ))}
-              <div style={{ borderTop: '2px solid #8CB874', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 900, color: '#0F170B', fontFamily: 'Playfair Display' }}>
-                <span>Total</span><span>₹{order.total?.toFixed(2)}</span>
+          {/* Items — card rows instead of wide table */}
+          <div style={{ marginBottom: 14 }}>
+            {/* Column header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 4, background: '#1B2E15', borderRadius: '8px 8px 0 0', padding: '7px 10px' }}>
+              <span style={{ fontSize: 9, color: '#AED581', fontWeight: 700, textTransform: 'uppercase' }}>Item</span>
+              <span style={{ fontSize: 9, color: '#AED581', fontWeight: 700, textTransform: 'uppercase', textAlign: 'center' }}>Qty × Rate</span>
+              <span style={{ fontSize: 9, color: '#AED581', fontWeight: 700, textTransform: 'uppercase', textAlign: 'right' }}>Amount</span>
+            </div>
+            {order.items.map((item, i) => (
+              <div key={i} style={{
+                display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 4, alignItems: 'center',
+                padding: '8px 10px', background: i % 2 === 0 ? '#FAFFF8' : '#F4FBF0',
+                borderBottom: '1px solid #E8F5E9',
+                borderRadius: i === order.items.length - 1 ? '0 0 8px 8px' : 0
+              }}>
+                <div style={{ fontSize: 12, color: '#0F170B', fontWeight: 600 }}>{item.name}</div>
+                <div style={{ fontSize: 11, color: '#4A6B3A', textAlign: 'center', whiteSpace: 'nowrap' }}>{item.qty} × ₹{item.price}</div>
+                <div style={{ fontSize: 12, color: '#0F170B', fontWeight: 700, textAlign: 'right' }}>₹{(item.price * item.qty).toFixed(2)}</div>
               </div>
+            ))}
+          </div>
+
+          {/* Totals — full width */}
+          <div style={{ background: '#F1F8E9', borderRadius: 10, padding: '12px 14px', border: '1px solid #C8E6C9' }}>
+            {[
+              { label: 'Subtotal', value: `₹${order.subtotal?.toFixed(2)}` },
+              { label: 'CGST (2.5%)', value: `₹${(order.gst / 2).toFixed(2)}` },
+              { label: 'SGST (2.5%)', value: `₹${(order.gst / 2).toFixed(2)}` },
+              order.discount > 0 && { label: `Discount (${order.discount}%)`, value: `-₹${(order.subtotal * order.discount / 100).toFixed(2)}` },
+            ].filter(Boolean).map(({ label, value }) => (
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#4A6B3A', marginBottom: 5 }}>
+                <span>{label}</span><span style={{ fontWeight: 600 }}>{value}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: '2px solid #8CB874', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 900, color: '#0F170B', fontFamily: 'Playfair Display' }}>
+              <span>Total</span><span>₹{order.total?.toFixed(2)}</span>
             </div>
           </div>
 
           {/* Footer */}
-          <div style={{ marginTop: 22, borderTop: '1px solid #C8E6C9', paddingTop: 14, textAlign: 'center', fontSize: 11, color: '#8CB874', lineHeight: 1.7 }}>
+          <div style={{ marginTop: 18, borderTop: '1px solid #C8E6C9', paddingTop: 12, textAlign: 'center', fontSize: 11, color: '#8CB874', lineHeight: 1.7 }}>
             Thank you for choosing Nineteen06 Artisan Bakery 🎂<br />
             <span style={{ color: '#9AAF8A', fontSize: 10 }}>This is a computer-generated invoice.</span>
           </div>
@@ -279,7 +274,6 @@ function InvoiceCard({ order, onView, index }) {
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {order.customerName}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{invoiceNum}</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
           {format(new Date(order.createdAt), 'dd MMM yyyy')} · {order.items.length} item{order.items.length !== 1 ? 's' : ''}
         </div>
