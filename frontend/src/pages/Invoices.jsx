@@ -13,9 +13,24 @@ const InstagramIcon = ({ size = 15, color = '#E1306C' }) => (
   </svg>
 )
 
+/* ── Capture invoice div as PNG blob ── */
+async function captureInvoiceImage() {
+  const el = document.getElementById('invoice-print')
+  if (!el) throw new Error('Invoice element not found')
+  const html2canvas = (await import('html2canvas')).default
+  const canvas = await html2canvas(el, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#F9FAF8',
+    logging: false,
+  })
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+}
+
 /* ── Share Dropdown ── */
-function ShareDropdown({ order, invoiceNum, onClose }) {
+function ShareDropdown({ invoiceNum, onClose }) {
   const ref = useRef(null)
+  const [loading, setLoading] = useState(null) // 'whatsapp' | 'instagram' | null
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
@@ -23,31 +38,42 @@ function ShareDropdown({ order, invoiceNum, onClose }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
-  const buildMessage = () => {
-    const items = order.items.map(i => `• ${i.name} x${i.qty} — ₹${(i.price * i.qty).toFixed(0)}`).join('\n')
-    return encodeURIComponent(
-      `🎂 *Nineteen06 Artisan Bakery*\n` +
-      `📄 Invoice: ${invoiceNum}\n` +
-      `👤 Customer: ${order.customerName}\n` +
-      `📅 Date: ${format(new Date(order.createdAt), 'dd MMM yyyy')}\n\n` +
-      `*Items:*\n${items}\n\n` +
-      `💰 *Total: ₹${order.total?.toFixed(2)}*\n\n` +
-      `Thank you for choosing Nineteen06! 🙏`
-    )
-  }
+  const shareImage = async (platform) => {
+    setLoading(platform)
+    try {
+      const blob = await captureInvoiceImage()
+      const file = new File([blob], `${invoiceNum}.png`, { type: 'image/png' })
 
-  const shareWhatsApp = () => {
-    window.open(`https://wa.me/?text=${buildMessage()}`, '_blank')
-    onClose()
-  }
+      // Try native Web Share API (works great on mobile)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Invoice ${invoiceNum}`,
+          text: 'Nineteen06 Artisan Bakery Invoice',
+        })
+        onClose()
+        return
+      }
 
-  const shareInstagram = () => {
-    // Instagram doesn't support direct text sharing via URL — copy to clipboard and open app
-    navigator.clipboard?.writeText(decodeURIComponent(buildMessage())).then(() => {
-      alert('Invoice details copied! Paste into Instagram story or DM.')
-      window.open('https://www.instagram.com/', '_blank')
-    })
-    onClose()
+      // Fallback: download image then open the platform
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${invoiceNum}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+
+      if (platform === 'whatsapp') {
+        setTimeout(() => window.open('https://wa.me/', '_blank'), 500)
+      } else {
+        setTimeout(() => window.open('https://www.instagram.com/', '_blank'), 500)
+      }
+      onClose()
+    } catch (err) {
+      if (err.name !== 'AbortError') alert('Could not share image. Please try again.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   return (
@@ -60,38 +86,49 @@ function ShareDropdown({ order, invoiceNum, onClose }) {
       style={{
         position: 'absolute', top: '100%', right: 0, marginTop: 8, zIndex: 200,
         background: 'var(--bg-dark)', border: '1px solid var(--glass-border)',
-        borderRadius: 14, padding: 6, minWidth: 170,
+        borderRadius: 14, padding: 6, minWidth: 180,
         boxShadow: '0 12px 40px rgba(0,0,0,0.25)'
       }}
     >
-      <button onClick={shareWhatsApp} style={{
+      {/* WhatsApp */}
+      <button onClick={() => shareImage('whatsapp')} disabled={!!loading} style={{
         display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        padding: '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+        padding: '10px 14px', borderRadius: 10, border: 'none', cursor: loading ? 'wait' : 'pointer',
         background: 'transparent', color: 'var(--text-main)', fontSize: 13, fontWeight: 600,
-        transition: 'background 0.15s'
+        transition: 'background 0.15s', opacity: loading === 'instagram' ? 0.4 : 1
       }}
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,211,102,0.12)'}
         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
       >
         <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(37,211,102,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <MessageCircle size={15} color="#25D366" />
+          {loading === 'whatsapp'
+            ? <span style={{ fontSize: 14 }}>⏳</span>
+            : <MessageCircle size={15} color="#25D366" />}
         </div>
-        WhatsApp
+        {loading === 'whatsapp' ? 'Capturing…' : 'WhatsApp'}
       </button>
-      <button onClick={shareInstagram} style={{
+
+      {/* Instagram */}
+      <button onClick={() => shareImage('instagram')} disabled={!!loading} style={{
         display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        padding: '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+        padding: '10px 14px', borderRadius: 10, border: 'none', cursor: loading ? 'wait' : 'pointer',
         background: 'transparent', color: 'var(--text-main)', fontSize: 13, fontWeight: 600,
-        transition: 'background 0.15s'
+        transition: 'background 0.15s', opacity: loading === 'whatsapp' ? 0.4 : 1
       }}
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(225,48,108,0.1)'}
         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
       >
         <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(225,48,108,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <InstagramIcon size={15} color="#E1306C" />
+          {loading === 'instagram'
+            ? <span style={{ fontSize: 14 }}>⏳</span>
+            : <InstagramIcon size={15} color="#E1306C" />}
         </div>
-        Instagram
+        {loading === 'instagram' ? 'Capturing…' : 'Instagram'}
       </button>
+
+      <div style={{ fontSize: 10, color: 'var(--text-muted)', padding: '4px 14px 6px', textAlign: 'center', lineHeight: 1.4 }}>
+        📸 Shares bill as image
+      </div>
     </motion.div>
   )
 }
@@ -150,7 +187,7 @@ function InvoicePreviewModal({ order, onClose }) {
                 <Share2 size={12} /> Share
               </button>
               <AnimatePresence>
-                {showShare && <ShareDropdown order={order} invoiceNum={invoiceNum} onClose={() => setShowShare(false)} />}
+                {showShare && <ShareDropdown invoiceNum={invoiceNum} onClose={() => setShowShare(false)} />}
               </AnimatePresence>
             </div>
             <button onClick={onClose} style={{
