@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, User, Phone, Mail, Star, X, Edit2 } from 'lucide-react'
+import { Plus, Search, User, Phone, Mail, X, Edit2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -67,8 +67,6 @@ export default function Customers() {
     else updateCustomer(modal.id, data)
   }
 
-  const tierColor = (pts) => pts >= 200 ? 'var(--accent-gold)' : pts >= 100 ? '#8CB874' : pts >= 50 ? '#C5E1A5' : 'var(--text-muted)'
-  const tierLabel = (pts) => pts >= 200 ? 'Gold' : pts >= 100 ? 'Silver' : pts >= 50 ? 'Bronze' : 'New'
 
   return (
     <div>
@@ -87,7 +85,6 @@ export default function Customers() {
           {[
             { label: 'Total Customers', value: customers.length, color: 'var(--accent-gold)' },
             { label: 'Total Revenue', value: `₹${customers.reduce((s, c) => s + (c.totalSpent || 0), 0).toLocaleString()}`, color: 'var(--accent-light)' },
-            { label: 'Total Loyalty Pts', value: customers.reduce((s, c) => s + (c.loyaltyPoints || 0), 0), color: 'var(--accent-gold)' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: 'var(--card-bg)', borderRadius: 12, padding: '16px 18px', border: '1px solid var(--glass-border)' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>{label}</div>
@@ -128,13 +125,6 @@ export default function Customers() {
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total Spent</div>
                     <div style={{ fontSize: 15, fontFamily: 'Playfair Display', color: 'var(--accent-gold)', fontWeight: 700 }}>₹{c.totalSpent?.toLocaleString()}</div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
-                      <Star size={12} color={tierColor(c.loyaltyPoints)} fill={tierColor(c.loyaltyPoints)} />
-                      <span style={{ fontSize: 12, color: tierColor(c.loyaltyPoints), fontWeight: 600 }}>{tierLabel(c.loyaltyPoints)}</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{c.loyaltyPoints} pts</div>
-                  </div>
                 </div>
               </motion.div>
             ))}
@@ -154,14 +144,10 @@ export default function Customers() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)' }}><User size={13} color="var(--accent-gold)" />Member since {format(new Date(selected.createdAt), 'MMM yyyy')}</div>
             </div>
             <div style={{ background: 'rgba(140, 184, 116, 0.08)', borderRadius: 10, padding: '14px', marginBottom: 18, border: '1px solid var(--glass-border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontFamily: 'Playfair Display', fontSize: 20, color: 'var(--accent-light)', fontWeight: 700 }}>₹{selected.totalSpent?.toLocaleString()}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total Spent</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'Playfair Display', fontSize: 20, color: tierColor(selected.loyaltyPoints), fontWeight: 700 }}>{selected.loyaltyPoints}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Loyalty Pts</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontFamily: 'Playfair Display', fontSize: 20, color: '#8CB874', fontWeight: 700 }}>{getCustomerOrders(selected.id).length}</div>
