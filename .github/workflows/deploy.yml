@@ -1,0 +1,62 @@
+name: Deploy to Amazon EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Application to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # Ensure the project directory exists
+            if [ ! -d "/home/ec2-user/nb" ]; then
+              git clone https://github.com/DineshMadhavanM/Nb.git /home/ec2-user/nb
+            fi
+            
+            cd /home/ec2-user/nb
+            
+            # Reset local changes and pull latest code from main branch
+            git reset --hard origin/main
+            git pull origin main
+            
+            # 1. Setup Backend
+            cd backend
+            npm install --production
+            npx prisma generate
+            npx prisma migrate deploy
+            
+            # Restart Backend (using PM2 if installed, or falling back to running with nohup)
+            if command -v pm2 &> /dev/null; then
+              pm2 restart backend || pm2 start index.js --name "backend"
+            else
+              # Clean up any running backend process on default port
+              pkill -f "node index.js" || true
+              nohup node index.js > backend.log 2>&1 &
+            fi
+            
+            # 2. Setup Frontend
+            cd ../frontend
+            npm install
+            npm run build
+            
+            # Restart Frontend (using PM2 or serve via nohup)
+            if command -v pm2 &> /dev/null; then
+              pm2 restart frontend || pm2 start "serve -s dist -l 3000" --name "frontend"
+            else
+              pkill -f "serve -s dist -l 3000" || true
+              nohup serve -s dist -l 3000 > frontend.log 2>&1 &
+            fi
