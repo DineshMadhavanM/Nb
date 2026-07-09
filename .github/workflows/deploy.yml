@@ -23,12 +23,13 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
+            set -e
             # Ensure the project directory exists
-            if [ ! -d "/home/ec2-user/nb" ]; then
-              git clone https://github.com/DineshMadhavanM/Nb.git /home/ec2-user/nb
+            if [ ! -d "/home/ubuntu/Nb" ]; then
+              git clone https://github.com/DineshMadhavanM/Nb.git /home/ubuntu/Nb
             fi
             
-            cd /home/ec2-user/nb
+            cd /home/ubuntu/Nb
             
             # Reset local changes and pull latest code from main branch
             git reset --hard origin/main
