@@ -39,7 +39,7 @@ jobs:
             cd backend
             npm install --production
             npx prisma generate
-            npx prisma migrate deploy
+            npx prisma db push --accept-data-loss
             
             # Restart Backend (using PM2 if installed, or falling back to running with nohup)
             if command -v pm2 &> /dev/null; then
