@@ -8,7 +8,7 @@ import { format, subDays, startOfMonth, eachDayOfInterval, isSameDay } from 'dat
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{ background: 'rgba(255, 255, 255, 0.95)', border: '1px solid var(--glass-border)', borderRadius: 10, padding: '10px 14px', boxShadow: '0 8px 30px rgba(0,0,0,0.05)' }}>
+      <div style={{ background: 'var(--nav-bg)', border: '1px solid var(--glass-border)', borderRadius: 10, padding: '10px 14px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}>
         <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{label}</div>
         <div style={{ color: 'var(--accent-gold)', fontSize: 14, fontWeight: 700 }}>₹{payload[0].value?.toLocaleString()}</div>
       </div>
@@ -117,7 +117,7 @@ export default function Dashboard() {
             <div style={{ fontFamily: 'Playfair Display', fontSize: 17, color: 'var(--text-main)', fontWeight: 600 }}>Revenue Overview</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Sales performance</div>
           </div>
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.8)', borderRadius: 8, border: '1px solid var(--glass-border)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', background: 'var(--input-bg)', borderRadius: 8, border: '1px solid var(--glass-border)', overflow: 'hidden' }}>
             {['weekly', 'monthly'].map(m => (
               <button key={m} onClick={() => setChartMode(m)} style={{ padding: '6px 14px', fontSize: 12, border: 'none', cursor: 'pointer', fontWeight: 500, background: chartMode === m ? 'rgba(104,159,56,0.1)' : 'transparent', color: chartMode === m ? 'var(--accent-light)' : 'var(--text-muted)', transition: 'all 0.2s' }}>
                 {m.charAt(0).toUpperCase() + m.slice(1)}

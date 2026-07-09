@@ -31,10 +31,10 @@
   --accent-gold: #8CB874;
   --accent-light: #C5E1A5;
   --text-main: #F1F8E9;
-  --text-muted: rgba(241, 248, 233, 0.45);
+  --text-muted: rgba(241, 248, 233, 0.75);
   --glass-border: rgba(140, 184, 116, 0.15);
   --shadow-main: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --card-bg: rgba(15, 23, 11, 0.5);
+  --card-bg: rgba(255, 255, 255, 0.07);
   --input-bg: rgba(0, 0, 0, 0.2);
   --modal-bg: rgba(10, 5, 2, 0.75);
   --nav-bg: rgba(15, 23, 11, 0.85);
@@ -64,7 +64,7 @@ body {
 
 /* Glass card */
 .glass-card {
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--card-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
@@ -254,8 +254,8 @@ body {
 
 /* Stat card */
 .stat-card {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(104, 159, 56, 0.1);
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 22px;
   position: relative;
