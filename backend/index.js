@@ -37,7 +37,13 @@ async function runWithRetry(fn, retries = 3, delayMs = 1500) {
 }
 
 app.use(cors({
-  origin: ["https://d2kq8f3o2dr3ni.cloudfront.net", "http://localhost:3000", "http://localhost:5173"],
+  origin: [
+    "https://d2kq8f3o2dr3ni.cloudfront.net",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://13.126.237.253",
+    "http://13.126.237.253:3000",
+  ],
   credentials: true
 }));
 app.use(express.json());

@@ -13,52 +13,79 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
+          envs: DATABASE_URL,VITE_API_URL
           script: |
             set -e
+
             # Ensure the project directory exists
             if [ ! -d "/home/ubuntu/Nb" ]; then
               git clone https://github.com/DineshMadhavanM/Nb.git /home/ubuntu/Nb
             fi
-            
+
             cd /home/ubuntu/Nb
-            
+
             # Reset local changes and pull latest code from main branch
             git reset --hard origin/main
             git pull origin main
-            
-            # 1. Setup Backend
+
+            # ── 1. Backend ────────────────────────────────────────────
             cd backend
+
+            # Write backend .env from GitHub Secrets (never committed to git)
+            printf 'DATABASE_URL="%s"\nPORT=5000\n' "${DATABASE_URL}" > .env
+
             npm install --production
             npx prisma generate
             npx prisma db push --accept-data-loss
-            
-            # Restart Backend (using PM2 if installed, or falling back to running with nohup)
+
+            # Start / restart backend with PM2
             if command -v pm2 &> /dev/null; then
-              pm2 restart backend || pm2 start index.js --name "backend"
+              pm2 describe backend > /dev/null 2>&1 \
+                && pm2 restart backend \
+                || pm2 start index.js --name "backend"
+              pm2 save
             else
-              # Clean up any running backend process on default port
               pkill -f "node index.js" || true
               nohup node index.js > backend.log 2>&1 &
             fi
-            
-            # 2. Setup Frontend
+
+            # Wait a moment then verify backend is up
+            sleep 5
+            if curl -sf http://localhost:5000/ > /dev/null; then
+              echo "✅ Backend is running on port 5000"
+            else
+              echo "❌ Backend failed to start! Dumping logs:"
+              pm2 logs backend --lines 50 --nostream || cat backend.log || true
+              exit 1
+            fi
+
+            # ── 2. Frontend ───────────────────────────────────────────
             cd ../frontend
+
+            # Write frontend .env from GitHub Secrets (baked in at build time)
+            echo "VITE_API_URL=${VITE_API_URL}" > .env
+
             npm install
             npm run build
-            
-            # Restart Frontend (using PM2 or serve via nohup)
+
+            # Start / restart frontend with PM2
             if command -v pm2 &> /dev/null; then
-              pm2 restart frontend || pm2 start "serve -s dist -l 3000" --name "frontend"
+              pm2 describe frontend > /dev/null 2>&1 \
+                && pm2 restart frontend \
+                || pm2 start "npx serve -s dist -l 3000" --name "frontend"
+              pm2 save
             else
-              pkill -f "serve -s dist -l 3000" || true
-              nohup serve -s dist -l 3000 > frontend.log 2>&1 &
+              pkill -f "serve -s dist" || true
+              nohup npx serve -s dist -l 3000 > frontend.log 2>&1 &
             fi
+
+            echo "🚀 Deployment complete!"
