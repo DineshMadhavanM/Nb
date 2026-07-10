@@ -20,7 +20,6 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          envs: DATABASE_URL,VITE_API_URL
           command_timeout: 30m
           script: |
             set -e
@@ -71,8 +70,8 @@ jobs:
 
             cd backend
 
-            # Write backend .env from GitHub Secrets
-            printf 'DATABASE_URL="%s"\nPORT=5000\n' "${DATABASE_URL}" > .env
+            # Write backend .env from GitHub Secrets (injected directly by GitHub Actions)
+            printf 'DATABASE_URL="%s"\nPORT=5000\n' '${{ secrets.DATABASE_URL }}' > .env
             echo "✅ backend/.env written"
 
             npm install --production
@@ -117,8 +116,8 @@ jobs:
 
             cd ../frontend
 
-            # Write frontend .env from GitHub Secrets (baked in at build time)
-            echo "VITE_API_URL=${VITE_API_URL}" > .env
+            # Write frontend .env from GitHub Secrets (injected directly by GitHub Actions)
+            echo 'VITE_API_URL=${{ secrets.VITE_API_URL }}' > .env
             echo "✅ frontend/.env written: VITE_API_URL=${VITE_API_URL}"
 
             npm install
