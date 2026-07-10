@@ -126,14 +126,10 @@ jobs:
             npm run build
             echo "✅ build done"
 
-            # Start / restart frontend with PM2
-            if pm2 describe frontend > /dev/null 2>&1; then
-              pm2 restart frontend
-              echo "✅ PM2 restarted frontend"
-            else
-              pm2 start "serve -s dist -l 3000" --name "frontend"
-              echo "✅ PM2 started frontend"
-            fi
+            # Start / restart frontend with PM2 (use absolute path so PM2 always finds dist)
+            pm2 delete frontend > /dev/null 2>&1 || true
+            pm2 start "serve -s /home/ubuntu/Nb/frontend/dist -l 3000" --name "frontend"
+            echo "✅ PM2 started frontend"
             pm2 save
 
             echo ""
