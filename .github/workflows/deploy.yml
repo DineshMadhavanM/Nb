@@ -21,69 +21,126 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           envs: DATABASE_URL,VITE_API_URL
+          command_timeout: 30m
           script: |
             set -e
 
-            # Ensure the project directory exists
+            echo "──────────────────────────────────────────"
+            echo "🔍 Checking system dependencies..."
+            echo "──────────────────────────────────────────"
+
+            # Install Node.js 20 if not present
+            if ! command -v node &> /dev/null; then
+              echo "📦 Installing Node.js..."
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+            echo "✅ Node: $(node -v)  NPM: $(npm -v)"
+
+            # Install PM2 globally if not present
+            if ! command -v pm2 &> /dev/null; then
+              echo "📦 Installing PM2..."
+              sudo npm install -g pm2
+            fi
+            echo "✅ PM2: $(pm2 -v)"
+
+            # Install serve globally if not present
+            if ! command -v serve &> /dev/null; then
+              echo "📦 Installing serve..."
+              sudo npm install -g serve
+            fi
+
+            echo ""
+            echo "──────────────────────────────────────────"
+            echo "📥 Pulling latest code..."
+            echo "──────────────────────────────────────────"
+
             if [ ! -d "/home/ubuntu/Nb" ]; then
               git clone https://github.com/DineshMadhavanM/Nb.git /home/ubuntu/Nb
             fi
 
             cd /home/ubuntu/Nb
-
-            # Reset local changes and pull latest code from main branch
+            git fetch origin
             git reset --hard origin/main
             git pull origin main
 
-            # ── 1. Backend ────────────────────────────────────────────
+            echo ""
+            echo "──────────────────────────────────────────"
+            echo "🔧 Setting up Backend..."
+            echo "──────────────────────────────────────────"
+
             cd backend
 
-            # Write backend .env from GitHub Secrets (never committed to git)
+            # Write backend .env from GitHub Secrets
             printf 'DATABASE_URL="%s"\nPORT=5000\n' "${DATABASE_URL}" > .env
+            echo "✅ backend/.env written"
 
             npm install --production
+            echo "✅ npm install done"
+
             npx prisma generate
+            echo "✅ prisma generate done"
+
             npx prisma db push --accept-data-loss
+            echo "✅ prisma db push done"
 
             # Start / restart backend with PM2
-            if command -v pm2 &> /dev/null; then
-              pm2 describe backend > /dev/null 2>&1 \
-                && pm2 restart backend \
-                || pm2 start index.js --name "backend"
-              pm2 save
+            if pm2 describe backend > /dev/null 2>&1; then
+              pm2 restart backend
+              echo "✅ PM2 restarted backend"
             else
-              pkill -f "node index.js" || true
-              nohup node index.js > backend.log 2>&1 &
+              pm2 start index.js --name "backend"
+              echo "✅ PM2 started backend"
             fi
+            pm2 save
 
-            # Wait a moment then verify backend is up
-            sleep 5
-            if curl -sf http://localhost:5000/ > /dev/null; then
-              echo "✅ Backend is running on port 5000"
-            else
-              echo "❌ Backend failed to start! Dumping logs:"
-              pm2 logs backend --lines 50 --nostream || cat backend.log || true
-              exit 1
-            fi
+            # Health check — wait up to 30 seconds
+            echo "⏳ Waiting for backend to come up..."
+            for i in $(seq 1 6); do
+              sleep 5
+              if curl -sf http://localhost:5000/ > /dev/null 2>&1; then
+                echo "✅ Backend is running on port 5000"
+                break
+              fi
+              echo "  attempt $i/6 — not ready yet..."
+              if [ $i -eq 6 ]; then
+                echo "❌ Backend failed to start after 30s! Last logs:"
+                pm2 logs backend --lines 50 --nostream || true
+                exit 1
+              fi
+            done
 
-            # ── 2. Frontend ───────────────────────────────────────────
+            echo ""
+            echo "──────────────────────────────────────────"
+            echo "🎨 Setting up Frontend..."
+            echo "──────────────────────────────────────────"
+
             cd ../frontend
 
             # Write frontend .env from GitHub Secrets (baked in at build time)
             echo "VITE_API_URL=${VITE_API_URL}" > .env
+            echo "✅ frontend/.env written: VITE_API_URL=${VITE_API_URL}"
 
             npm install
+            echo "✅ npm install done"
+
             npm run build
+            echo "✅ build done"
 
             # Start / restart frontend with PM2
-            if command -v pm2 &> /dev/null; then
-              pm2 describe frontend > /dev/null 2>&1 \
-                && pm2 restart frontend \
-                || pm2 start "npx serve -s dist -l 3000" --name "frontend"
-              pm2 save
+            if pm2 describe frontend > /dev/null 2>&1; then
+              pm2 restart frontend
+              echo "✅ PM2 restarted frontend"
             else
-              pkill -f "serve -s dist" || true
-              nohup npx serve -s dist -l 3000 > frontend.log 2>&1 &
+              pm2 start "serve -s dist -l 3000" --name "frontend"
+              echo "✅ PM2 started frontend"
             fi
+            pm2 save
 
+            echo ""
+            echo "══════════════════════════════════════════"
             echo "🚀 Deployment complete!"
+            echo "   Frontend : http://${EC2_HOST}:3000"
+            echo "   Backend  : http://${EC2_HOST}:5000"
+            echo "══════════════════════════════════════════"
+            pm2 status
