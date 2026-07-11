@@ -1,4 +1,4 @@
-name: Deploy to Amazon EC2
+name: Deploy to Amazon EC2 + S3
 
 on:
   push:
@@ -7,20 +7,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Deploy Application to EC2
+
+  # ── Job 1: Deploy Backend to EC2 ──────────────────────────────
+  deploy-backend:
+    name: Deploy Backend to EC2
     runs-on: ubuntu-latest
-
     steps:
-
-      - name: Deploy to EC2 via SSH
+      - name: Deploy Backend via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          command_timeout: 30m
+          command_timeout: 15m
           script: |
             set -e
 
@@ -28,7 +28,6 @@ jobs:
             echo "🔍 Checking system dependencies..."
             echo "──────────────────────────────────────────"
 
-            # Install Node.js 20 if not present
             if ! command -v node &> /dev/null; then
               echo "📦 Installing Node.js..."
               curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -36,18 +35,11 @@ jobs:
             fi
             echo "✅ Node: $(node -v)  NPM: $(npm -v)"
 
-            # Install PM2 globally if not present
             if ! command -v pm2 &> /dev/null; then
               echo "📦 Installing PM2..."
               sudo npm install -g pm2
             fi
             echo "✅ PM2: $(pm2 -v)"
-
-            # Install serve globally if not present
-            if ! command -v serve &> /dev/null; then
-              echo "📦 Installing serve..."
-              sudo npm install -g serve
-            fi
 
             echo ""
             echo "──────────────────────────────────────────"
@@ -70,7 +62,6 @@ jobs:
 
             cd backend
 
-            # Write backend .env from GitHub Secrets (injected directly by GitHub Actions)
             printf 'DATABASE_URL="%s"\nPORT=5000\n' '${{ secrets.DATABASE_URL }}' > .env
             echo "✅ backend/.env written"
 
@@ -83,17 +74,15 @@ jobs:
             npx prisma db push --accept-data-loss
             echo "✅ prisma db push done"
 
-            # Start / restart backend with PM2
             if pm2 describe backend > /dev/null 2>&1; then
               pm2 restart backend
-              echo "✅ PM2 restarted backend"
             else
               pm2 start index.js --name "backend"
-              echo "✅ PM2 started backend"
             fi
             pm2 save
+            echo "✅ Backend PM2 process running"
 
-            # Health check — wait up to 30 seconds
+            # Health check — retry up to 30 seconds
             echo "⏳ Waiting for backend to come up..."
             for i in $(seq 1 6); do
               sleep 5
@@ -103,39 +92,55 @@ jobs:
               fi
               echo "  attempt $i/6 — not ready yet..."
               if [ $i -eq 6 ]; then
-                echo "❌ Backend failed to start after 30s! Last logs:"
+                echo "❌ Backend failed to start! Last logs:"
                 pm2 logs backend --lines 50 --nostream || true
                 exit 1
               fi
             done
 
-            echo ""
-            echo "──────────────────────────────────────────"
-            echo "🎨 Setting up Frontend..."
-            echo "──────────────────────────────────────────"
+            echo "🚀 Backend deployment complete!"
 
-            cd ../frontend
+  # ── Job 2: Build Frontend & Deploy to S3 ──────────────────────
+  deploy-frontend:
+    name: Deploy Frontend to S3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
 
-            # Write frontend .env from GitHub Secrets (injected directly by GitHub Actions)
-            echo 'VITE_API_URL=${{ secrets.VITE_API_URL }}' > .env
-            echo "✅ frontend/.env written: VITE_API_URL=${VITE_API_URL}"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-            npm install
-            echo "✅ npm install done"
+      - name: Build Frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: |
+          echo "VITE_API_URL=$VITE_API_URL" > .env
+          echo "✅ .env written: VITE_API_URL=$VITE_API_URL"
+          npm ci
+          npm run build
+          echo "✅ Frontend build complete"
 
-            npm run build
-            echo "✅ build done"
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
-            # Start / restart frontend with PM2 (use absolute path so PM2 always finds dist)
-            pm2 delete frontend > /dev/null 2>&1 || true
-            pm2 start "serve -s /home/ubuntu/Nb/frontend/dist -l 3000" --name "frontend"
-            echo "✅ PM2 started frontend"
-            pm2 save
+      - name: Sync dist to S3
+        run: |
+          aws s3 sync frontend/dist s3://1906-b --delete
+          echo "✅ Synced frontend/dist to s3://1906-b"
 
-            echo ""
-            echo "══════════════════════════════════════════"
-            echo "🚀 Deployment complete!"
-            echo "   Frontend : http://${EC2_HOST}:3000"
-            echo "   Backend  : http://${EC2_HOST}:5000"
-            echo "══════════════════════════════════════════"
-            pm2 status
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+          echo "✅ CloudFront cache invalidated"
