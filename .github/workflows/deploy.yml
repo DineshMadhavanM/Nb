@@ -138,6 +138,11 @@ jobs:
           aws s3 sync frontend/dist s3://1906-b --delete
           echo "✅ Synced frontend/dist to s3://1906-b"
 
+      - name: Verify S3 Contents
+        run: |
+          aws s3 ls s3://1906-b --recursive
+          echo "✅ Listed S3 contents"
+
       - name: Invalidate CloudFront Cache
         run: |
           aws cloudfront create-invalidation \
