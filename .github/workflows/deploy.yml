@@ -139,7 +139,7 @@ jobs:
           echo "✅ Synced frontend/dist to s3://1906-b"
 
       - name: Invalidate CloudFront Cache
-        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        if: "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}"
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
