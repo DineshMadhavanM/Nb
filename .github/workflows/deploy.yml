@@ -1,4 +1,4 @@
-name: Deploy to Amazon EC2 + S3
+name: Deploy to Amazon EC2
 
 on:
   push:
@@ -7,20 +7,18 @@ on:
   workflow_dispatch:
 
 jobs:
-
-  # ── Job 1: Deploy Backend to EC2 ──────────────────────────────
-  deploy-backend:
-    name: Deploy Backend to EC2
+  deploy:
+    name: Deploy to EC2
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy Backend via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          command_timeout: 15m
+          command_timeout: 30m
           script: |
             set -e
 
@@ -41,6 +39,12 @@ jobs:
             fi
             echo "✅ PM2: $(pm2 -v)"
 
+            if ! command -v serve &> /dev/null; then
+              echo "📦 Installing serve..."
+              sudo npm install -g serve
+            fi
+            echo "✅ serve installed"
+
             echo ""
             echo "──────────────────────────────────────────"
             echo "📥 Pulling latest code..."
@@ -60,19 +64,15 @@ jobs:
             echo "🔧 Setting up Backend..."
             echo "──────────────────────────────────────────"
 
-            cd backend
+            cd /home/ubuntu/Nb/backend
 
             printf 'DATABASE_URL="%s"\nPORT=5000\n' '${{ secrets.DATABASE_URL }}' > .env
             echo "✅ backend/.env written"
 
             npm install --production
-            echo "✅ npm install done"
-
             npx prisma generate
-            echo "✅ prisma generate done"
-
             npx prisma db push --accept-data-loss
-            echo "✅ prisma db push done"
+            echo "✅ Prisma ready"
 
             if pm2 describe backend > /dev/null 2>&1; then
               pm2 restart backend
@@ -80,72 +80,32 @@ jobs:
               pm2 start index.js --name "backend"
             fi
             pm2 save
-            echo "✅ Backend PM2 process running"
+            echo "✅ Backend running"
 
-            # Health check — retry up to 30 seconds
-            echo "⏳ Waiting for backend to come up..."
-            for i in $(seq 1 6); do
-              sleep 5
-              if curl -sf http://localhost:5000/ > /dev/null 2>&1; then
-                echo "✅ Backend is running on port 5000"
-                break
-              fi
-              echo "  attempt $i/6 — not ready yet..."
-              if [ $i -eq 6 ]; then
-                echo "❌ Backend failed to start! Last logs:"
-                pm2 logs backend --lines 50 --nostream || true
-                exit 1
-              fi
-            done
+            echo ""
+            echo "──────────────────────────────────────────"
+            echo "🎨 Building Frontend..."
+            echo "──────────────────────────────────────────"
 
-            echo "🚀 Backend deployment complete!"
+            cd /home/ubuntu/Nb/frontend
 
-  # ── Job 2: Build Frontend & Deploy to S3 ──────────────────────
-  deploy-frontend:
-    name: Deploy Frontend to S3
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4.2.2
+            echo 'VITE_API_URL=${{ secrets.VITE_API_URL }}' > .env
+            echo "✅ frontend/.env written"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+            npm install
+            npm run build
+            echo "✅ Frontend built"
 
-      - name: Build Frontend
-        working-directory: frontend
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        run: |
-          echo "VITE_API_URL=$VITE_API_URL" > .env
-          echo "✅ .env written: VITE_API_URL=$VITE_API_URL"
-          npm ci
-          npm run build
-          echo "✅ Frontend build complete"
+            # Always delete + start fresh so the correct path is used
+            pm2 delete frontend > /dev/null 2>&1 || true
+            pm2 start "serve -s /home/ubuntu/Nb/frontend/dist -l 3000" --name "frontend"
+            pm2 save
+            echo "✅ Frontend served at port 3000"
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
-
-      - name: Sync dist to S3
-        run: |
-          aws s3 sync frontend/dist s3://1906-b --delete
-          echo "✅ Synced frontend/dist to s3://1906-b"
-
-      - name: Verify S3 Contents
-        run: |
-          aws s3 ls s3://1906-b --recursive
-          echo "✅ Listed S3 contents"
-
-      - name: Invalidate CloudFront Cache
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id "E2OX13ABPEU4PV" \
-            --paths "/*"
-          echo "✅ CloudFront cache invalidated"
+            echo ""
+            echo "══════════════════════════════════════════"
+            echo "🚀 Deployment complete!"
+            echo "   Frontend : http://${{ secrets.EC2_HOST }}:3000"
+            echo "   Backend  : http://${{ secrets.EC2_HOST }}:5000"
+            echo "══════════════════════════════════════════"
+            pm2 status
