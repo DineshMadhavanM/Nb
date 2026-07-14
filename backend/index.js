@@ -41,8 +41,8 @@ app.use(cors({
     "https://d2kq8f3o2dr3ni.cloudfront.net",
     "http://localhost:3000",
     "http://localhost:5173",
-    "http://13.126.237.253",
-    "http://13.126.237.253:3000",
+    "http://43.204.38.117",
+    "http://43.204.38.117:3000",
   ],
   credentials: true
 }));
