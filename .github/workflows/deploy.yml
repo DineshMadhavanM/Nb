@@ -61,6 +61,20 @@ jobs:
 
             echo ""
             echo "──────────────────────────────────────────"
+            echo "🎨 Building Frontend..."
+            echo "──────────────────────────────────────────"
+
+            cd /home/ubuntu/Nb/frontend
+
+            echo 'VITE_API_URL=${{ secrets.VITE_API_URL }}' > .env
+            echo "✅ frontend/.env written"
+
+            npm install
+            npm run build
+            echo "✅ Frontend built"
+
+            echo ""
+            echo "──────────────────────────────────────────"
             echo "🔧 Setting up Backend..."
             echo "──────────────────────────────────────────"
 
@@ -74,38 +88,20 @@ jobs:
             npx prisma db push --accept-data-loss
             echo "✅ Prisma ready"
 
+            # Delete any old frontend PM2 processes (since port 5000 now serves everything)
+            pm2 delete frontend > /dev/null 2>&1 || true
+
             if pm2 describe backend > /dev/null 2>&1; then
               pm2 restart backend
             else
               pm2 start index.js --name "backend"
             fi
             pm2 save
-            echo "✅ Backend running"
-
-            echo ""
-            echo "──────────────────────────────────────────"
-            echo "🎨 Building Frontend..."
-            echo "──────────────────────────────────────────"
-
-            cd /home/ubuntu/Nb/frontend
-
-            echo 'VITE_API_URL=${{ secrets.VITE_API_URL }}' > .env
-            echo "✅ frontend/.env written"
-
-            npm install
-            npm run build
-            echo "✅ Frontend built"
-
-            # Always delete + start fresh so the correct path is used
-            pm2 delete frontend > /dev/null 2>&1 || true
-            pm2 start "serve -s /home/ubuntu/Nb/frontend/dist -l 3000" --name "frontend"
-            pm2 save
-            echo "✅ Frontend served at port 3000"
+            echo "✅ Backend running on port 5000 (serving both API and Frontend)"
 
             echo ""
             echo "══════════════════════════════════════════"
             echo "🚀 Deployment complete!"
-            echo "   Frontend : http://${{ secrets.EC2_HOST }}:3000"
-            echo "   Backend  : http://${{ secrets.EC2_HOST }}:5000"
+            echo "   Unified App : http://${{ secrets.EC2_HOST }}:5000"
             echo "══════════════════════════════════════════"
             pm2 status

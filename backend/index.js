@@ -49,9 +49,9 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
-app.get('/', (req, res) => {
-  res.send('Nineteen06 POS API is running...');
-});
+// app.get('/', (req, res) => {
+//   res.send('Nineteen06 POS API is running...');
+// });
 
 // --- Products Routes ---
 app.get('/api/products', async (req, res) => {
@@ -397,6 +397,12 @@ app.get('/api/analytics/dashboard', async (req, res) => {
     console.error("API Error:", error);
     res.status(500).json({ error: error.message });
   }
+});
+
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 app.listen(PORT, () => {
