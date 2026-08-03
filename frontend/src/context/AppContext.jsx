@@ -35,11 +35,11 @@ export function AppProvider({ children }) {
         analyticsApi.getDashboard(),
         categoryApi.getAll()
       ])
-      setProducts(prodRes.data || [])
-      setOrders(orderRes.data || [])
-      setCustomers(custRes.data || [])
+      setProducts(Array.isArray(prodRes.data) ? prodRes.data : [])
+      setOrders(Array.isArray(orderRes.data) ? orderRes.data : [])
+      setCustomers(Array.isArray(custRes.data) ? custRes.data : [])
       setAnalytics(anaRes.data || null)
-      setCategories(catRes.data || [])
+      setCategories(Array.isArray(catRes.data) ? catRes.data : [])
     } catch (error) {
       console.error('Error fetching data:', error)
       toast.error('Failed to connect to the server')
@@ -55,7 +55,7 @@ export function AppProvider({ children }) {
   const addProduct = async (product) => {
     try {
       const res = await productApi.create(product)
-      setProducts(prev => [res.data, ...prev])
+      setProducts(prev => [res.data, ...(Array.isArray(prev) ? prev : [])])
       toast.success('Product added successfully')
       return res.data
     } catch (error) {
@@ -67,7 +67,7 @@ export function AppProvider({ children }) {
   const updateProduct = async (id, updates) => {
     try {
       const res = await productApi.update(id, updates)
-      setProducts(prev => prev.map(p => p.id === id ? res.data : p))
+      setProducts(prev => (Array.isArray(prev) ? prev : []).map(p => p.id === id ? res.data : p))
       toast.success('Product updated')
     } catch (error) {
       toast.error('Failed to update product')
@@ -77,7 +77,7 @@ export function AppProvider({ children }) {
   const deleteProduct = async (id) => {
     try {
       await productApi.delete(id)
-      setProducts(prev => prev.filter(p => p.id !== id))
+      setProducts(prev => (Array.isArray(prev) ? prev : []).filter(p => p.id !== id))
       toast.success('Product deleted')
     } catch (error) {
       toast.error('Failed to delete product')
@@ -87,7 +87,7 @@ export function AppProvider({ children }) {
   const addOrder = async (order) => {
     try {
       const res = await orderApi.create(order)
-      setOrders(prev => [res.data, ...prev])
+      setOrders(prev => [res.data, ...(Array.isArray(prev) ? prev : [])])
       // Refresh analytics and products (for stock)
       fetchData()
       return res.data
@@ -100,7 +100,7 @@ export function AppProvider({ children }) {
   const updateOrderStatus = async (id, status, paymentMethod, paymentStatus) => {
     try {
       const res = await orderApi.updateStatus(id, status, paymentMethod, paymentStatus)
-      setOrders(prev => prev.map(o => o.id === id ? { 
+      setOrders(prev => (Array.isArray(prev) ? prev : []).map(o => o.id === id ? { 
         ...o, 
         status: res.data.status,
         paymentMethod: res.data.paymentMethod,
@@ -115,7 +115,7 @@ export function AppProvider({ children }) {
   const updatePaymentStatus = async (id, paymentStatus) => {
     try {
       const res = await orderApi.updatePayment(id, paymentStatus)
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, paymentStatus: res.data.paymentStatus } : o))
+      setOrders(prev => (Array.isArray(prev) ? prev : []).map(o => o.id === id ? { ...o, paymentStatus: res.data.paymentStatus } : o))
       if (paymentStatus === 'paid') {
         toast.success('Payment marked as Received')
       }
@@ -128,7 +128,7 @@ export function AppProvider({ children }) {
   const deleteOrder = async (id) => {
     try {
       await orderApi.delete(id)
-      setOrders(prev => prev.filter(o => o.id !== id))
+      setOrders(prev => (Array.isArray(prev) ? prev : []).filter(o => o.id !== id))
       toast.success('Order deleted and stock restored')
       // Refresh analytics and products
       fetchData()
@@ -140,7 +140,7 @@ export function AppProvider({ children }) {
   const addCustomer = async (customer) => {
     try {
       const res = await customerApi.create(customer)
-      setCustomers(prev => [res.data, ...prev])
+      setCustomers(prev => [res.data, ...(Array.isArray(prev) ? prev : [])])
       return res.data
     } catch (error) {
       toast.error('Failed to add customer')
@@ -150,7 +150,7 @@ export function AppProvider({ children }) {
   const addCategory = async (category) => {
     try {
       const res = await categoryApi.create(category)
-      setCategories(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)))
+      setCategories(prev => [...(Array.isArray(prev) ? prev : []), res.data].sort((a, b) => a.name.localeCompare(b.name)))
       toast.success('Category added')
       return res.data
     } catch (error) {
@@ -161,45 +161,47 @@ export function AppProvider({ children }) {
   const deleteCategory = async (id) => {
     try {
       await categoryApi.delete(id)
-      setCategories(prev => prev.filter(c => c.id !== id))
+      setCategories(prev => (Array.isArray(prev) ? prev : []).filter(c => c.id !== id))
       toast.success('Category deleted')
     } catch (error) {
       toast.error('Failed to delete category')
     }
   }
 
+  const safeOrders = Array.isArray(orders) ? orders : []
+
   // Analytics Helpers — computed live from orders state so Dashboard updates instantly
   const getTodayRevenue = () => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return orders
+    return safeOrders
       .filter(o => {
         const d = o.paidAt ? new Date(o.paidAt) : null
         return d && d >= today && o.paymentStatus === 'paid' && o.status !== 'cancelled'
       })
-      .reduce((sum, o) => sum + o.total, 0)
+      .reduce((sum, o) => sum + (o.total || 0), 0)
   }
   const getTodayOrders = () => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return orders.filter(o => new Date(o.createdAt) >= today && o.status !== 'cancelled').length
+    return safeOrders.filter(o => new Date(o.createdAt) >= today && o.status !== 'cancelled').length
   }
   const getTodayDiscounts = () => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return orders
+    return safeOrders
       .filter(o => new Date(o.createdAt) >= today)
       .reduce((sum, o) => sum + (o.discount || 0), 0)
   }
-  const getTotalDiscounts = () => orders.reduce((sum, o) => sum + (o.discount || 0), 0)
+  const getTotalDiscounts = () => safeOrders.reduce((sum, o) => sum + (o.discount || 0), 0)
   const getMonthlyRevenue = () => {
     const start = startOfMonth(new Date())
-    return orders.filter(o => {
+    return safeOrders.filter(o => {
       const orderDate = o.paidAt ? new Date(o.paidAt) : new Date(o.createdAt)
       return o.paymentStatus === 'paid' && o.status !== 'cancelled' && orderDate >= start
-    }).reduce((sum, o) => sum + o.total, 0)
+    }).reduce((sum, o) => sum + (o.total || 0), 0)
   }
-  const getTotalGST = () => orders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + (o.gst || 0), 0)
+  const getTotalGST = () => safeOrders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + (o.gst || 0), 0)
 
   return (
     <AppContext.Provider value={{

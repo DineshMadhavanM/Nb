@@ -61,29 +61,30 @@ export default function Dashboard() {
   const [chartMode, setChartMode] = useState('weekly')
 
   const chartData = useMemo(() => {
+    const safeOrders = Array.isArray(orders) ? orders : []
     if (chartMode === 'weekly') {
       const days = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() })
       return days.map(day => {
-        const dayOrders = orders.filter(o => {
+        const dayOrders = safeOrders.filter(o => {
           const orderDate = o.paidAt ? new Date(o.paidAt) : new Date(o.createdAt)
           return isSameDay(orderDate, day) && o.status !== 'cancelled' && o.paymentStatus === 'paid'
         })
         return {
           day: format(day, 'EEE'),
-          revenue: dayOrders.reduce((sum, o) => sum + o.total, 0)
+          revenue: dayOrders.reduce((sum, o) => sum + (o.total || 0), 0)
         }
       })
     } else {
       const data = []
       for (let i = 5; i >= 0; i--) {
         const date = subDays(new Date(), i * 30)
-        const monthOrders = orders.filter(o => {
+        const monthOrders = safeOrders.filter(o => {
           const orderDate = o.paidAt ? new Date(o.paidAt) : new Date(o.createdAt)
           return format(orderDate, 'MMM yyyy') === format(date, 'MMM yyyy') && o.status !== 'cancelled' && o.paymentStatus === 'paid'
         })
         data.push({
           month: format(date, 'MMM'),
-          revenue: monthOrders.reduce((sum, o) => sum + o.total, 0)
+          revenue: monthOrders.reduce((sum, o) => sum + (o.total || 0), 0)
         })
       }
       return data
