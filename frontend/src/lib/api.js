@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://d2kq8f3o2dr3ni.cloudfront.net/api';
+let rawApiUrl = import.meta.env.VITE_API_URL || 'https://nb-backend-2yow.onrender.com/api';
+if (rawApiUrl.endsWith('/')) rawApiUrl = rawApiUrl.slice(0, -1);
+const API_BASE_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
 
 const api = axios.create({
   baseURL: API_BASE_URL,

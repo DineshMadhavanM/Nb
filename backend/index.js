@@ -50,6 +50,21 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Rewrite requests missing /api prefix (e.g. /categories -> /api/categories)
+app.use((req, res, next) => {
+  if (
+    !req.path.startsWith('/api') &&
+    (req.path.startsWith('/products') ||
+     req.path.startsWith('/categories') ||
+     req.path.startsWith('/orders') ||
+     req.path.startsWith('/customers') ||
+     req.path.startsWith('/analytics'))
+  ) {
+    req.url = '/api' + req.url;
+  }
+  next();
+});
+
 // app.get('/', (req, res) => {
 //   res.send('Nineteen06 POS API is running...');
 // });
