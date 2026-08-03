@@ -39,6 +39,7 @@ async function runWithRetry(fn, retries = 3, delayMs = 1500) {
 app.use(cors({
   origin: [
     "https://d2kq8f3o2dr3ni.cloudfront.net",
+    "https://nb-frontend-gefk.onrender.com",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://43.204.38.117",

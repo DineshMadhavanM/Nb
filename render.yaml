@@ -24,4 +24,4 @@ services:
     publishDir: dist
     envVars:
       - key: VITE_API_URL
-        value: https://nb-backend-2yow.onrender.com
+        value: https://nb-backend-2yow.onrender.com/api
