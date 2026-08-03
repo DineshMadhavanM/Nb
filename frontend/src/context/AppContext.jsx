@@ -168,11 +168,30 @@ export function AppProvider({ children }) {
     }
   }
 
-  // Analytics Helpers
-  const getTodayRevenue = () => analytics?.todayRevenue || 0
-  const getTodayOrders = () => analytics?.todayOrders || 0
-  const getTodayDiscounts = () => analytics?.todayDiscounts || 0
-  const getTotalDiscounts = () => analytics?.totalDiscounts || 0
+  // Analytics Helpers — computed live from orders state so Dashboard updates instantly
+  const getTodayRevenue = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return orders
+      .filter(o => {
+        const d = o.paidAt ? new Date(o.paidAt) : null
+        return d && d >= today && o.paymentStatus === 'paid' && o.status !== 'cancelled'
+      })
+      .reduce((sum, o) => sum + o.total, 0)
+  }
+  const getTodayOrders = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return orders.filter(o => new Date(o.createdAt) >= today && o.status !== 'cancelled').length
+  }
+  const getTodayDiscounts = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return orders
+      .filter(o => new Date(o.createdAt) >= today)
+      .reduce((sum, o) => sum + (o.discount || 0), 0)
+  }
+  const getTotalDiscounts = () => orders.reduce((sum, o) => sum + (o.discount || 0), 0)
   const getMonthlyRevenue = () => {
     const start = startOfMonth(new Date())
     return orders.filter(o => {

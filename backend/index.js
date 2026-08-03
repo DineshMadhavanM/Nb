@@ -152,31 +152,22 @@ app.post('/api/orders', async (req, res) => {
     
     const payStatus = paymentMethod === 'Credit' ? 'unpaid' : 'paid';
 
-    // Create order with items in a transaction (wrapped in runWithRetry)
-    const order = await runWithRetry(() => prisma.$transaction(async (tx) => {
-      let finalCustomerId = customerId;
-
-      // Automatically create or find customer if phone is provided but no ID
-      if (!finalCustomerId && customerPhone && customerName !== 'Walk-in Customer') {
-        const existingCustomer = await tx.customer.findUnique({
-          where: { phone: customerPhone }
-        });
-
-        if (existingCustomer) {
-          finalCustomerId = existingCustomer.id;
-        } else {
-          const newCustomer = await tx.customer.create({
-            data: {
-              name: customerName,
-              phone: customerPhone,
-              totalSpent: 0,
-              loyaltyPoints: 0
-            }
-          });
-          finalCustomerId = newCustomer.id;
-        }
+    // Step 1: Resolve or create customer
+    let finalCustomerId = customerId;
+    if (!finalCustomerId && customerPhone && customerName !== 'Walk-in Customer') {
+      const existingCustomer = await runWithRetry(() => prisma.customer.findUnique({ where: { phone: customerPhone } }));
+      if (existingCustomer) {
+        finalCustomerId = existingCustomer.id;
+      } else {
+        const newCustomer = await runWithRetry(() => prisma.customer.create({
+          data: { name: customerName, phone: customerPhone, totalSpent: 0, loyaltyPoints: 0 }
+        }));
+        finalCustomerId = newCustomer.id;
       }
+    }
 
+    // Step 2: Create the order with its items in a short transaction
+    const order = await runWithRetry(() => prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
           customId: `ORD-${Date.now()}`,
@@ -203,39 +194,34 @@ app.post('/api/orders', async (req, res) => {
           }
         }
       });
-
-      // Update product stock
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.qty } }
-        });
-      }
-
-      // Update customer total spent and loyalty points
-      if (finalCustomerId) {
-        await tx.customer.update({
-          where: { id: finalCustomerId },
-          data: {
-            totalSpent: { increment: total },
-            loyaltyPoints: { increment: Math.floor(total / 100) }
-          }
-        });
-      }
-
-      // Create Invoice automatically
       await tx.invoice.create({
-        data: {
-          invoiceNumber: `INV-${Date.now()}`,
-          orderId: newOrder.id
-        }
+        data: { invoiceNumber: `INV-${Date.now()}`, orderId: newOrder.id }
       });
-
       return newOrder;
-    }));
+    }, { timeout: 30000 }));
+
+    // Step 3: Update stock for each item (outside transaction to avoid timeout)
+    for (const item of items) {
+      await runWithRetry(() => prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.qty } }
+      })).catch(e => console.error(`Stock update failed for product ${item.productId}:`, e.message));
+    }
+
+    // Step 4: Update customer totals (outside transaction)
+    if (finalCustomerId) {
+      await runWithRetry(() => prisma.customer.update({
+        where: { id: finalCustomerId },
+        data: {
+          totalSpent: { increment: total },
+          loyaltyPoints: { increment: Math.floor(total / 100) }
+        }
+      })).catch(e => console.error('Customer update failed:', e.message));
+    }
 
     res.status(201).json(order);
   } catch (error) {
+    console.error('POST /api/orders Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -401,7 +387,7 @@ app.get('/api/analytics/dashboard', async (req, res) => {
 
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
-app.get('*', (req, res) => {
+app.get('{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
