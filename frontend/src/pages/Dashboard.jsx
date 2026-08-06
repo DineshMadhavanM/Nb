@@ -7,10 +7,37 @@ import { format, subDays, startOfMonth, eachDayOfInterval, isSameDay } from 'dat
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload
+    const dateStr = data.fullDate || label
+    const count = data.ordersCount ?? 0
+    const rev = payload[0].value || 0
+
     return (
-      <div style={{ background: 'var(--nav-bg)', border: '1px solid var(--glass-border)', borderRadius: 10, padding: '10px 14px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{label}</div>
-        <div style={{ color: 'var(--accent-gold)', fontSize: 14, fontWeight: 700 }}>₹{payload[0].value?.toLocaleString()}</div>
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--glass-border)',
+        borderRadius: 12,
+        padding: '10px 14px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+        minWidth: 160
+      }}>
+        <div style={{ color: 'var(--text-main)', fontSize: 13, fontWeight: 700, marginBottom: 6, borderBottom: '1px solid var(--glass-border)', paddingBottom: 4 }}>
+          {dateStr}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Day:</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{data.dayName || label}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Total Orders:</span>
+            <span style={{ color: '#60a5fa', fontWeight: 700 }}>{count} {count === 1 ? 'order' : 'orders'}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Total Revenue:</span>
+            <span style={{ color: 'var(--accent-gold)', fontWeight: 800 }}>₹{rev.toLocaleString('en-IN')}</span>
+          </div>
+        </div>
       </div>
     )
   }
@@ -71,7 +98,10 @@ export default function Dashboard() {
         })
         return {
           day: format(day, 'EEE'),
-          revenue: dayOrders.reduce((sum, o) => sum + (o.total || 0), 0)
+          dayName: format(day, 'EEEE'),
+          fullDate: format(day, 'EEEE, MMM d, yyyy'),
+          revenue: dayOrders.reduce((sum, o) => sum + (o.total || 0), 0),
+          ordersCount: dayOrders.length
         }
       })
     } else {
@@ -84,7 +114,10 @@ export default function Dashboard() {
         })
         data.push({
           month: format(date, 'MMM'),
-          revenue: monthOrders.reduce((sum, o) => sum + (o.total || 0), 0)
+          dayName: format(date, 'MMMM yyyy'),
+          fullDate: format(date, 'MMMM yyyy'),
+          revenue: monthOrders.reduce((sum, o) => sum + (o.total || 0), 0),
+          ordersCount: monthOrders.length
         })
       }
       return data
@@ -131,7 +164,7 @@ export default function Dashboard() {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(104,159,56,0.1)" />
             <XAxis dataKey={dataKey} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(104,159,56,0.08)', radius: 8 }} />
             <Bar dataKey="revenue" fill="var(--accent-gold)" radius={[5,5,0,0]} opacity={0.8} />
           </BarChart>
         </ResponsiveContainer>

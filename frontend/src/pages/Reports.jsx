@@ -10,16 +10,41 @@ import { format, subDays, eachDayOfInterval, isSameDay, startOfMonth } from 'dat
 
 /* ── Flutter-style Tooltip ── */
 const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload?.length) return (
-    <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color || 'var(--accent-gold)', fontSize: 15, fontWeight: 800 }}>
-          {p.name === 'revenue' ? `₹${Number(p.value).toLocaleString('en-IN')}` : p.value}
+  if (active && payload?.length) {
+    const data = payload[0].payload
+    const dateStr = data.fullDate || label
+    const count = data.ordersCount ?? data.orders ?? 0
+    const rev = data.revenue ?? payload[0].value ?? 0
+
+    return (
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--glass-border)',
+        borderRadius: 14,
+        padding: '10px 14px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+        minWidth: 160
+      }}>
+        <div style={{ color: 'var(--text-main)', fontSize: 13, fontWeight: 700, marginBottom: 6, borderBottom: '1px solid var(--glass-border)', paddingBottom: 4 }}>
+          {dateStr}
         </div>
-      ))}
-    </div>
-  )
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Day:</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{data.dayName || label}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Total Orders:</span>
+            <span style={{ color: '#60a5fa', fontWeight: 700 }}>{count} {count === 1 ? 'order' : 'orders'}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Total Revenue:</span>
+            <span style={{ color: 'var(--accent-gold)', fontWeight: 800 }}>₹{Number(rev).toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
   return null
 }
 
@@ -85,11 +110,13 @@ export default function Reports() {
         const d = o.paidAt ? new Date(o.paidAt) : new Date(o.createdAt)
         return isSameDay(d, day) && o.status !== 'cancelled' && o.paymentStatus === 'paid'
       })
-      const dayAll = orders.filter(o => isSameDay(new Date(o.createdAt), day) && o.status !== 'cancelled')
       return {
         day: format(day, period === '7D' ? 'EEE' : 'dd MMM'),
+        dayName: format(day, 'EEEE'),
+        fullDate: format(day, 'EEEE, MMM d, yyyy'),
         revenue: dayPaid.reduce((s, o) => s + o.total, 0),
-        orders: dayAll.length
+        ordersCount: dayPaid.length,
+        orders: dayPaid.length
       }
     })
   }, [orders, period])
