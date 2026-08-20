@@ -36,6 +36,16 @@ export default function Orders() {
     o.id.toLowerCase().includes(search.toLowerCase()) || o.customerName.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Calculate daily order sequence number (1, 2, 3...) per calendar day (12:00 AM to 11:59 PM)
+  const dailyOrderMap = new Map()
+  const sortedChronological = [...orders].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  const dayCounts = {}
+  sortedChronological.forEach(o => {
+    const dateKey = format(new Date(o.createdAt || Date.now()), 'yyyy-MM-dd')
+    dayCounts[dateKey] = (dayCounts[dateKey] || 0) + 1
+    dailyOrderMap.set(o.id, dayCounts[dateKey])
+  })
+
   const handleStatus = (id, status) => {
     updateOrderStatus(id, status)
     toast.success(`Order ${id} → ${status}`)
@@ -64,13 +74,44 @@ export default function Orders() {
           <div style={{ overflowX: 'auto' }}>
             <table className="table-dark">
               <thead>
-                <tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Method</th><th>Status</th><th>Actions</th></tr>
+                <tr>
+                  <th>Today Order #</th>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Type</th>
+                  <th>Total</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
                 {filtered.map(o => (
                   <tr key={o.id} onClick={() => setSelected(selected?.id === o.id ? null : o)} style={{ cursor: 'pointer', background: selected?.id === o.id ? 'rgba(140,184,116,0.06)' : 'transparent' }}>
+                    <td>
+                      <span style={{
+                        background: 'rgba(140, 184, 116, 0.15)',
+                        border: '1px solid rgba(140, 184, 116, 0.3)',
+                        color: 'var(--accent-light)',
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        fontSize: 11,
+                        fontWeight: 700
+                      }}>
+                        #{dailyOrderMap.get(o.id) || 1}
+                      </span>
+                    </td>
                     <td style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>{o.id.slice(-6).toUpperCase()}</td>
                     <td style={{ fontWeight: 500 }}>{o.customerName}</td>
+                    <td>
+                      <span className="badge" style={{
+                        background: o.orderType === 'Takeaway' ? 'rgba(96,165,250,0.15)' : 'rgba(140,184,116,0.15)',
+                        color: o.orderType === 'Takeaway' ? '#60a5fa' : 'var(--accent-light)',
+                        border: `1px solid ${o.orderType === 'Takeaway' ? 'rgba(96,165,250,0.3)' : 'rgba(140,184,116,0.3)'}`
+                      }}>
+                        {o.orderType || 'Walk-in'}
+                      </span>
+                    </td>
                     <td style={{ fontWeight: 600 }}>₹{o.total.toFixed(0)}</td>
                     <td><span className="badge-gold">{o.paymentMethod}</span></td>
                     <td>
@@ -114,7 +155,9 @@ export default function Orders() {
               <div style={{ fontFamily: 'Playfair Display', fontSize: 16, color: 'var(--text-main)' }}>{selected.id}</div>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }}>✕</button>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Customer: <span style={{ color: 'var(--text-main)' }}>{selected.customerName}</span></div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Today Order #: <span style={{ color: 'var(--accent-light)', fontWeight: 700 }}>#{dailyOrderMap.get(selected.id) || 1}</span></div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Type: <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>{selected.orderType || 'Walk-in'}</span></div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Customer: <span style={{ color: 'var(--text-main)' }}>{selected.customerName}</span></div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Date: <span style={{ color: 'var(--text-main)' }}>{format(new Date(selected.createdAt), 'PPP p')}</span></div>
 
             <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--accent-gold)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Items</div>

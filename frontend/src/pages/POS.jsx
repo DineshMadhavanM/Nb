@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, Plus, Minus, Trash2, X, CreditCard, Smartphone, Banknote, CheckCircle, User, Calendar, Clock } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, Trash2, X, CreditCard, Smartphone, Banknote, CheckCircle, User, Calendar, Clock, Store, ShoppingBag } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useCart } from '../context/CartContext'
 import toast from 'react-hot-toast'
@@ -10,6 +10,7 @@ function CheckoutModal({ onClose }) {
   const { cart, selectedCustomer, getSubtotal, getGST, getDiscountAmount, getTotal, discount, setDiscount, discountType, setDiscountType, clearCart, setSelectedCustomer } = useCart()
   const { addOrder, addCustomer, customers } = useApp()
   const [payMethod, setPayMethod] = useState('UPI')
+  const [orderType, setOrderType] = useState('Walk-in') // Walk-in | Takeaway
   const [step, setStep] = useState('review') // review | success
   const [dueDateType, setDueDateType] = useState('today')
   const [customDays, setCustomDays] = useState('7')
@@ -45,8 +46,9 @@ function CheckoutModal({ onClose }) {
     }
     const order = {
       customerId,
-      customerName: newCustName.trim() || 'Walk-in Customer',
+      customerName: newCustName.trim() || (orderType === 'Takeaway' ? 'Takeaway Customer' : 'Walk-in Customer'),
       customerPhone: newCustPhone.trim() || '',
+      orderType,
       items: cart.map(i => ({ 
         productId: i.productId, 
         name: i.name, 
@@ -85,6 +87,41 @@ function CheckoutModal({ onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
           <h2 style={{ fontFamily: 'Playfair Display', fontSize: 20, color: 'var(--text-main)' }}>Checkout</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
+        </div>
+
+        {/* Order Type */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order Type</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {[
+              { id: 'Walk-in', label: 'Walk-in', icon: Store },
+              { id: 'Takeaway', label: 'Takeaway', icon: ShoppingBag }
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setOrderType(id)}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  border: `1px solid ${orderType === id ? 'var(--accent-gold)' : 'var(--glass-border)'}`,
+                  background: orderType === id ? 'rgba(140, 184, 116, 0.15)' : 'rgba(15, 23, 11, 0.4)',
+                  color: orderType === id ? 'var(--accent-light)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Icon size={16} />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Customer */}

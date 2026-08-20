@@ -45,6 +45,7 @@ model Order {
   customerId    String?     @db.ObjectId
   customerName  String
   customerPhone String?
+  orderType     String?     @default("Walk-in")
   subtotal      Float
   gst           Float?      @default(0)
   discount      Float       @default(0)

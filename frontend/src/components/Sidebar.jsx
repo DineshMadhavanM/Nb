@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingCart, FileText, Package,
-  Users, BarChart3, ClipboardList, X, Cookie, Sun, Moon, Info, Tag
+  Users, BarChart3, ClipboardList, X, Cookie, Sun, Moon, Info, Tag, Zap
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useApp } from '../context/AppContext'
@@ -9,6 +9,7 @@ import { useApp } from '../context/AppContext'
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/pos', icon: ShoppingCart, label: 'New Billing +' },
+  { path: '/current-order', icon: Zap, label: 'Current Order' },
   { path: '/orders', icon: ClipboardList, label: 'Orders' },
   { path: '/invoices', icon: FileText, label: 'Invoices' },
   { path: '/stock', icon: Package, label: 'Add Menu +' },

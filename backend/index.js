@@ -164,13 +164,13 @@ app.get('/api/orders', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customerId, customerName, customerPhone, items, subtotal, gst, discount, total, paymentMethod, dueDate } = req.body;
+    const { customerId, customerName, customerPhone, orderType, items, subtotal, gst, discount, total, paymentMethod, dueDate } = req.body;
     
     const payStatus = paymentMethod === 'Credit' ? 'unpaid' : 'paid';
 
     // Step 1: Resolve or create customer
     let finalCustomerId = customerId;
-    if (!finalCustomerId && customerPhone && customerName !== 'Walk-in Customer') {
+    if (!finalCustomerId && customerPhone && customerName !== 'Walk-in Customer' && customerName !== 'Takeaway Customer') {
       const existingCustomer = await runWithRetry(() => prisma.customer.findUnique({ where: { phone: customerPhone } }));
       if (existingCustomer) {
         finalCustomerId = existingCustomer.id;
@@ -190,6 +190,7 @@ app.post('/api/orders', async (req, res) => {
           customerId: finalCustomerId,
           customerName,
           customerPhone,
+          orderType: orderType || 'Walk-in',
           subtotal,
           gst,
           discount,
@@ -334,19 +335,39 @@ app.delete('/api/orders/:id', async (req, res) => {
 app.get('/api/customers', async (req, res) => {
   try {
     const customers = await runWithRetry(() => prisma.customer.findMany({
-      include: { Orders: true }
+      include: { Orders: true },
+      orderBy: { createdAt: 'desc' }
     }));
     res.json(customers);
   } catch (error) {
+    console.error("GET /api/customers Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.post('/api/customers', async (req, res) => {
   try {
-    const customer = await runWithRetry(() => prisma.customer.create({ data: req.body }));
+    const { name, phone, email } = req.body;
+    const trimmedPhone = phone ? phone.trim() : '';
+
+    if (trimmedPhone) {
+      const existing = await runWithRetry(() => prisma.customer.findUnique({ where: { phone: trimmedPhone } }));
+      if (existing) {
+        return res.status(200).json(existing);
+      }
+    }
+
+    const uniquePhone = trimmedPhone || `GUEST-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const customer = await runWithRetry(() => prisma.customer.create({
+      data: {
+        name: name?.trim() || 'Guest Customer',
+        phone: uniquePhone,
+        email: email?.trim() || null
+      }
+    }));
     res.status(201).json(customer);
   } catch (error) {
+    console.error("POST /api/customers Error:", error);
     res.status(500).json({ error: error.message });
   }
 });

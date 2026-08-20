@@ -224,7 +224,7 @@ function InvoicePreviewModal({ order, onClose }) {
           <div style={{ background: 'linear-gradient(135deg,#F1F8E9,#E8F5E9)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, border: '1px solid #C8E6C9' }}>
             <div style={{ fontSize: 8, fontWeight: 800, color: '#8CB874', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Bill To</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#0F170B' }}>{order.customerName}</div>
-            <div style={{ fontSize: 10, color: '#4A6B3A', marginTop: 2 }}>Payment: <b>{order.paymentMethod}</b></div>
+            <div style={{ fontSize: 10, color: '#4A6B3A', marginTop: 2 }}>Type: <b>{order.orderType || 'Walk-in'}</b> &bull; Payment: <b>{order.paymentMethod}</b></div>
           </div>
 
           {/* Items — card rows instead of wide table */}

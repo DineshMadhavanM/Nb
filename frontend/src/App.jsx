@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import POS from './pages/POS'
+import CurrentOrder from './pages/CurrentOrder'
 import Orders from './pages/Orders'
 import Invoices from './pages/Invoices'
 import Stock from './pages/Stock'
@@ -40,6 +41,7 @@ export default function App() {
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/pos" element={<POS />} />
+                <Route path="/current-order" element={<CurrentOrder />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/invoices" element={<Invoices />} />
                 <Route path="/stock" element={<Stock />} />
